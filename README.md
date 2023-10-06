@@ -1,70 +1,49 @@
-# Getting Started with Create React App
+# README - Aplicación de Creación de Contenido con IA
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Esta es una aplicación sencilla en React que utiliza Material UI para su interfaz de usuario. Es importante tener en cuenta que este proyecto es uno de los primeros y puede no seguir todas las mejores prácticas en ciertos aspectos. A pesar de ello, ofrece una potente funcionalidad que te permite crear contenido de manera masiva utilizando inteligencia artificial de OpenAI.
 
-## Available Scripts
+## Descripción del Proyecto
 
-In the project directory, you can run:
+La aplicación consta de las siguientes características principales:
 
-### `npm start`
+### Creación de Buyer Persona
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Puedes crear un "Buyer Persona" que le dará personalidad a la inteligencia artificial para crear contenido.
+- Define características como el tema de tus contenidos, en qué necesita ser experto para escribir y el tono que debe usar para escribir.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Creación de Planes y Keywords
 
-### `npm test`
+- Tienes la capacidad de crear planes de keywords y keywords. Actualmente, debes ingresar las keywords manualmente, pero en futuras actualizaciones, la aplicación te proporcionará ideas para multiplicar tu lista de keywords.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Generación de Títulos
 
-### `npm run build`
+- La aplicación utiliza inteligencia artificial junto con la información del "Buyer Persona" que has definido para crear ideas de títulos para tus contenidos.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Creación de Outline
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Antes de escribir el contenido completo, puedes generar un outline, es decir, un índice para tu contenido. Se ha demostrado que comenzar con un índice genera resultados de mayor calidad.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Generación de Contenido
 
-### `npm run eject`
+- Finalmente, la aplicación crea el contenido con la extensión en palabras que le hayas indicado.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Backend y Almacenamiento de Datos
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+El backend de la aplicación utiliza Firebase para la autenticación de usuarios y el almacenamiento de datos. Ten en cuenta que el modelo de base de datos en Firebase puede no ser óptimo, ya que este proyecto es uno de tus primeros intentos.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Integración de OpenAI
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+La aplicación integra la API de OpenAI para generar respuestas con inteligencia artificial. Esto es lo que le permite generar títulos, outline y contenido de alta calidad de manera automatizada.
 
-## Learn More
+## Funcionalidades a Futuro
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+El proyecto tiene planes de expansión en el futuro, que incluyen:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- La capacidad de ver el contenido generado.
+- La posibilidad de publicar directamente el contenido en un sitio web en WordPress.
 
-### Code Splitting
+## Costos
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+La creación de un plan de alrededor de 500 contenidos se puede realizar en aproximadamente 3 horas y tiene un costo aproximado de 10 centavos de dólar por cada contenido.
 
-### Analyzing the Bundle Size
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
