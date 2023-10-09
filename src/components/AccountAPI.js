@@ -6,11 +6,8 @@ import Button from '@mui/material/Button';
 import { doc, setDoc, getFirestore, collection, getDoc, getDocs, query, where } from 'firebase/firestore'; 
 import { AuthContext } from '../AuthContext'; 
 
-export default function AccountSettings({ onSubmitSuccess, submitButtonText = "Actualizar datos" }) {
+export default function AccountAPI({ onSubmitSuccess, submitButtonText = "Guardar API Key" }) {
     const [formData, setFormData] = useState({
-        empresa: '',
-        firstname: '',
-        lastname: '',
         openaikey: '',
     });
 
@@ -28,9 +25,6 @@ export default function AccountSettings({ onSubmitSuccess, submitButtonText = "A
           if (!querySnapshot.empty) {
             const businessData = querySnapshot.docs[0].data();
             setFormData({
-              empresa: businessData.empresa || '',
-              firstname: businessData.firstname || '',
-              lastname: businessData.lastname || '',
               openaikey: businessData.openaikey || '',
             });
           }
@@ -56,9 +50,6 @@ export default function AccountSettings({ onSubmitSuccess, submitButtonText = "A
   
           const businessData = {
               userId: currentUser.uid,
-              empresa: formData.empresa,
-              firstname: formData.firstname,
-              lastname: formData.lastname,
               openaikey: formData.openaikey // Guarda la API Key
           };
   
@@ -79,26 +70,11 @@ export default function AccountSettings({ onSubmitSuccess, submitButtonText = "A
         <Grid item xs={12}>
             <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                 <TextField
-                    label="Nombre de la empresa"
-                    name="empresa"
+                    label="OpenAI API Key"
+                    name="openaikey"
+                    type="password" 
                     margin="normal"
-                    placeholder={formData.empresa || ""}
-                    onChange={handleInputChange}
-                    InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                    label="Tu Nombre"
-                    name="firstname"
-                    margin="normal"
-                    placeholder={formData.firstname || ""}
-                    onChange={handleInputChange}
-                    InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                    label="Apellidos"
-                    name="lastname"
-                    margin="normal"
-                    placeholder={formData.lastname || ""}
+                    placeholder="****"
                     onChange={handleInputChange}
                     InputLabelProps={{ shrink: true }}
                 />

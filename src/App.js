@@ -9,9 +9,13 @@ import Titles from './components/Titles';
 import Contents from './components/Contents';
 import Account from './components/Account';
 import Onboarding from './components/Onboarding';
+import ContentPage from './components/ContentPage';
+import OutlinePage from './components/OutlinePage';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import React, { useContext } from 'react';
 import { AuthContext } from './AuthContext';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import Slide from '@mui/material/Slide';
 
 function App() {
   const { currentUser } = useContext(AuthContext);
@@ -29,6 +33,8 @@ function App() {
           <Route path="/contenidos" element={<Contents />} />
           <Route path="/cuenta" element={<Account />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/content/:keywordPlanId/:keywordId/:titleId" element={<ContentPage />} />
+          <Route path="/outline/:keywordPlanId/:keywordId/:titleId" element={<OutlinePage />} />
         </Routes>
       </div>
     </Router>

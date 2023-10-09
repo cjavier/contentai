@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
@@ -50,8 +51,57 @@ export default function ContentsDisplay() {
   const [backdropMessage, setBackdropMessage] = useState('');
   const [completedOutlines, setCompletedOutlines] = useState(0);
   const [totalOutlines, setTotalOutlines] = useState(0);
+  const navigate = useNavigate();
+  const [cachedKeywordPlans, setCachedKeywordPlans] = useState(null);
 
+  const loadKeywordPlans = async () => {
+    try {
+      const db = getFirestore();
+
+      // Obtener la colección de KeywordPlans desde Firestore
+      const keywordPlansCollection = collection(db, 'keywordsplans');
+
+      // Consultar los documentos de KeywordPlans asociados al usuario actual
+      const q = query(keywordPlansCollection, where('userId', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const keywordPlansData = [];
+
+      for (const keywordPlanDoc of querySnapshot.docs) {
+        const keywordsSnapshot = await getDocs(collection(keywordPlanDoc.ref, 'keywords'));
+        
+        const keywords = [];
+        for (const keywordDoc of keywordsSnapshot.docs) {
+          const keywordData = {
+            id: keywordDoc.id,
+            ...keywordDoc.data()
+          };
   
+          // Recuperar los títulos para esta keyword
+          const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
+          keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
+            id: titleDoc.id,
+            ...titleDoc.data() // Aquí obtenemos todas las propiedades del título, incluyendo 'outline' y 'content'
+          }));
+  
+          keywords.push(keywordData);
+        }
+      
+        const keywordPlan = {
+          id: keywordPlanDoc.id,
+          ...keywordPlanDoc.data(),
+          keywords
+        };
+      
+        keywordPlansData.push(keywordPlan);
+      }
+  
+      setKeywordPlans(keywordPlansData);
+      setCachedKeywordPlans(keywordPlansData); 
+    } catch (error) {
+      console.error('Error al cargar los KeywordPlans:', error);
+    }
+  };
 
 
   useEffect(() => {
@@ -59,54 +109,14 @@ export default function ContentsDisplay() {
       console.error('Usuario no autenticado. No se pueden cargar los KeywordPlans.');
       return;
     }
-  
-    const loadKeywordPlans = async () => {
-      try {
-        const db = getFirestore();
-  
-        // Obtener la colección de KeywordPlans desde Firestore
-        const keywordPlansCollection = collection(db, 'keywordsplans');
-  
-        // Consultar los documentos de KeywordPlans asociados al usuario actual
-        const q = query(keywordPlansCollection, where('userId', '==', currentUser.uid));
-        const querySnapshot = await getDocs(q);
-  
-        const keywordPlansData = [];
-  
-        for (const keywordPlanDoc of querySnapshot.docs) {
-          const keywordsSnapshot = await getDocs(collection(keywordPlanDoc.ref, 'keywords'));
-          
-          const keywords = [];
-          for (const keywordDoc of keywordsSnapshot.docs) {
-            const keywordData = {
-              id: keywordDoc.id,
-              ...keywordDoc.data()
-            };
+    if (cachedKeywordPlans) {
+      setKeywordPlans(cachedKeywordPlans);
+    } else {
+      loadKeywordPlans();
+    }
     
-            // Recuperar los títulos para esta keyword
-            const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-            keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
-              id: titleDoc.id,
-              ...titleDoc.data() // Aquí obtenemos todas las propiedades del título, incluyendo 'outline' y 'content'
-            }));
-    
-            keywords.push(keywordData);
-          }
-        
-          const keywordPlan = {
-            id: keywordPlanDoc.id,
-            ...keywordPlanDoc.data(),
-            keywords
-          };
-        
-          keywordPlansData.push(keywordPlan);
-        }
-    
-        setKeywordPlans(keywordPlansData);
-      } catch (error) {
-        console.error('Error al cargar los KeywordPlans:', error);
-      }
-    };
+  
+  
   
     loadKeywordPlans();
   }, [currentUser]);
@@ -325,9 +335,9 @@ const handleAllContentsCreation = async (keywordPlanId) => {
                       <TableCell>{keyword.keyword}</TableCell>
                       <TableCell sx={{ width: '15%', textAlign: 'right' }}>
                         {title.outline ? (
-                          <IconButton color="success">
-                            <DoneIcon />
-                          </IconButton>
+                          <IconButton color="success" onClick={() => navigate(`/outline/${keywordPlan.id}/${keyword.id}/${title.id}`)}>
+                          <DoneIcon />
+                        </IconButton>
                         ) : (
                           <IconButton color="primary" onClick={() => handleOutlineCreation(keywordPlan.id, keyword.id, title.id)}>
                             <AddIcon />
@@ -336,9 +346,9 @@ const handleAllContentsCreation = async (keywordPlanId) => {
                       </TableCell>
                       <TableCell sx={{ width: '15%', textAlign: 'right' }}>
                         {title.content ? (
-                          <IconButton color="success">
-                            <DoneIcon />
-                          </IconButton>
+                          <IconButton color="success" onClick={() => navigate(`/content/${keywordPlan.id}/${keyword.id}/${title.id}`)}>
+                          <DoneIcon />
+                        </IconButton>
                         ) : (
                           <IconButton color="primary" onClick={() => handleContentCreation(keywordPlan.id, keyword.id, title.id)}>
                             <AddIcon />
