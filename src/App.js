@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import logo from './logo.png';
 import './App.css';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -11,6 +11,7 @@ import Account from './components/Account';
 import Onboarding from './components/Onboarding';
 import ContentPage from './components/ContentPage';
 import OutlinePage from './components/OutlinePage';
+import ForgotPassword from './components/ForgotPassword';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import React, { useContext } from 'react';
 import { AuthContext } from './AuthContext';
@@ -26,6 +27,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/registro" element={<Register />} />
+          <Route path="/recuperar-contrasena" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/buyerpersonas" element={<BuyerPersonas />} />
           <Route path="/keywords" element={<Keywords />} />

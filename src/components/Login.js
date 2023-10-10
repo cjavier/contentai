@@ -117,6 +117,12 @@ const Login = () => {
                 {"No tienes cuenta? Regístrate"}
               </a>
             </Grid>
+            <Grid item xs>
+  <a href="/recuperar-contrasena" variant="body2">
+    ¿Olvidaste tu contraseña?
+  </a>
+</Grid>
+
           </Grid>
         </Box>
       </Box>

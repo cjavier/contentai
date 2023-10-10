@@ -4,6 +4,8 @@ import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -19,6 +21,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import CircularProgress from '@mui/material/CircularProgress';
 import Backdrop from '@mui/material/Backdrop';
+import TextField from '@mui/material/TextField';
 import Title from './Title';
 import { collection, getFirestore, getDocs, query, where, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../AuthContext';
@@ -34,12 +37,31 @@ export default function KeywordsDisplay() {
   const [selectedKeywordPlan, setSelectedKeywordPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
+  const [isAddKeywordModalVisible, setIsAddKeywordModalVisible] = useState(false);
+  const [newKeywords, setNewKeywords] = useState('');
+  const [editingKeywordId, setEditingKeywordId] = useState(null);
+  const [editingKeywordValue, setEditingKeywordValue] = useState('');
 
+  const handleEditKeywordStart = (keywordId, keywordValue) => {
+    setEditingKeywordId(keywordId);
+    setEditingKeywordValue(keywordValue);
+  };
 
   const showTitleCreationPopup = (keywordPlanId) => {
     setSelectedKeywordPlan(keywordPlanId);
     setIsPopupVisible(true);
   };
+  const handleOpenAddKeywordModal = (keywordPlanId) => {
+    setSelectedKeywordPlan(keywordPlanId); // Actualiza el estado con el ID del KeywordPlan
+    setIsAddKeywordModalVisible(true);
+  };
+  
+
+  const handleCloseAddKeywordModal = () => {
+    setIsAddKeywordModalVisible(false);
+  };
+
+  
 
   useEffect(() => {
     if (!currentUser) {
@@ -106,7 +128,42 @@ export default function KeywordsDisplay() {
     loadKeywordPlans();
   }, [currentUser]);
 
-
+  const handleAddKeywords = async () => {
+    try {
+      if (!currentUser) {
+        console.error('Usuario no autenticado. No se pueden agregar keywords.');
+        return;
+      }
+  
+      if (!selectedKeywordPlan) {
+        console.error('No se ha seleccionado un KeywordPlan.');
+        return;
+      }
+  
+      const db = getFirestore();
+  
+      // Obtener una referencia al KeywordPlan seleccionado
+      const keywordsPlanDocRef = doc(db, 'keywordsplans', selectedKeywordPlan);
+  
+      // Agregar cada keyword como un nuevo documento en la subcolección 'keywords' del KeywordsPlan seleccionado
+      const keywordsArray = newKeywords.split('\n');
+      for (let keyword of keywordsArray) {
+        await addDoc(collection(keywordsPlanDocRef, 'keywords'), { keyword });
+      }
+  
+      console.log('Keywords agregadas exitosamente al KeywordPlan.');
+  
+      // Limpiar el estado de newKeywords y cerrar el modal
+      setNewKeywords('');
+      setIsAddKeywordModalVisible(false);
+  
+      // Recargar los KeywordPlans para reflejar los cambios
+     // loadKeywordPlans();
+  
+    } catch (error) {
+      console.error('Error al agregar keywords al KeywordPlan:', error);
+    }
+  };
   const handleDeleteKeywordPlan = async (keywordPlanId) => {
     try {
       const db = getFirestore();
@@ -211,6 +268,37 @@ export default function KeywordsDisplay() {
       }, 2000); // Puedes ajustar el tiempo según lo que consideres adecuado
     } 
   };
+
+  const handleSaveEditedKeyword = async (keywordPlanId, keywordId) => {
+    try {
+      const db = getFirestore();
+      const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
+      await updateDoc(keywordRef, { keyword: editingKeywordValue });
+  
+      // Actualizar el estado local
+      setKeywordPlans((prevKeywordPlans) =>
+        prevKeywordPlans.map((keywordPlan) =>
+          keywordPlan.id === keywordPlanId
+            ? {
+                ...keywordPlan,
+                keywords: keywordPlan.keywords.map((keyword) =>
+                  keyword.id === keywordId
+                    ? { ...keyword, keyword: editingKeywordValue }
+                    : keyword
+                ),
+              }
+            : keywordPlan
+        )
+      );
+  
+      // Resetear el estado de edición
+      setEditingKeywordId(null);
+      setEditingKeywordValue('');
+    } catch (error) {
+      console.error('Error al actualizar la keyword:', error);
+    }
+  };
+  
   
   
   
@@ -250,25 +338,80 @@ export default function KeywordsDisplay() {
         </DialogActions>
       </Dialog>
 
+       {/* Diálogo para agregar keywords */}
+       <Dialog open={isAddKeywordModalVisible} onClose={handleCloseAddKeywordModal}>
+        <DialogTitle>Agregar Keywords al Plan</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Ingresa las keywords que deseas agregar:
+          </DialogContentText>
+         
+          <TextField 
+          fullWidth sx={{ m: 1 }}
+                    multiline
+                    maxRows={8}
+                    value={newKeywords}
+                    onChange={(e) => setNewKeywords(e.target.value)}
+                />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddKeywordModal} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleAddKeywords} color="primary">
+            Agregar Keywords
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Keyword list */}
       {keywordPlans.map((keywordPlan) => (
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Keyword Plan: {keywordPlan.id}</Title>
-            <Button onClick={() => showTitleCreationPopup(keywordPlan.id)}>Crear Ideas de Títulos</Button>
+            <Button variant="contained" onClick={() => showTitleCreationPopup(keywordPlan.id)}>Crear Ideas de Títulos</Button>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Keyword</TableCell>
                   <TableCell sx={{ textAlign: 'right' }}>Numero de Tìtulos</TableCell>
-                  <TableCell sx={{ width: '20%', textAlign: 'right' }}>Delete</TableCell> {/* Ajuste aquí */}
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell> {/* Ajuste aquí */}
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell> {/* Ajuste aquí */}
                 </TableRow>
               </TableHead>
               <TableBody>
   {keywordPlan.keywords.map((keyword, index) => (
     <TableRow key={index}>
-      <TableCell>{keyword.keyword}</TableCell>
+      <TableCell>
+        {editingKeywordId === keyword.id ? (
+          <TextField
+            value={editingKeywordValue}
+            onChange={(e) => setEditingKeywordValue(e.target.value)}
+          />
+        ) : (
+          keyword.keyword
+        )}
+      </TableCell>
       <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
+      <TableCell sx={{ textAlign: 'right' }}>
+        {editingKeywordId === keyword.id ? (
+          <IconButton
+            aria-label="save"
+            color="primary"
+            onClick={() => handleSaveEditedKeyword(keywordPlan.id, keyword.id)}
+          >
+            <SaveIcon /> {/* Puedes usar otro ícono si lo prefieres */}
+          </IconButton>
+        ) : (
+          <IconButton
+            aria-label="edit"
+            color="primary"
+            onClick={() => handleEditKeywordStart(keyword.id, keyword.keyword)}
+          >
+            <EditIcon />
+          </IconButton>
+        )}
+      </TableCell>
       <TableCell sx={{ textAlign: 'right' }}>
         <IconButton
           aria-label="delete"
@@ -282,8 +425,10 @@ export default function KeywordsDisplay() {
   ))}
 </TableBody>
             </Table>
-            <Button onClick={() => handleDeleteKeywordPlan(keywordPlan.id)}>Delete Keyword Plan</Button>
-          </Paper>
+            <Button variant="outlined" color="success" onClick={() => handleOpenAddKeywordModal(keywordPlan.id)}>Agregar Keywords</Button>
+                <div style={{ height: '5px' }}></div> {/* Espaciado */}
+            <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteKeywordPlan(keywordPlan.id)}>Borrar Keyword Plan</Button>
+        </Paper>
         </Grid>
       ))}
      <Backdrop open={isLoading} style={{ zIndex: 9999, color: '#fff', flexDirection: 'column' }}>
