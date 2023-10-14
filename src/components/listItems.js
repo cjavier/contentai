@@ -8,6 +8,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PeopleIcon from '@mui/icons-material/People';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LayersIcon from '@mui/icons-material/Layers';
+import PublishIcon from '@mui/icons-material/Publish';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { ElectricBolt, ManageSearch, Storage, SupervisedUserCircle } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
@@ -37,13 +38,19 @@ export const mainListItems = (
       <ListItemIcon>
         <Storage />
       </ListItemIcon>
-      <ListItemText primary="Titles" />
+      <ListItemText primary="Títulos" />
     </ListItemButton>
     <ListItemButton component={Link} to="/contenidos">
       <ListItemIcon>
         <ElectricBolt />
       </ListItemIcon>
-      <ListItemText primary="Content" />
+      <ListItemText primary="Contenido" />
+    </ListItemButton>
+    <ListItemButton component={Link} to="/publicar">
+      <ListItemIcon>
+        <PublishIcon />
+      </ListItemIcon>
+      <ListItemText primary="Publicar" />
     </ListItemButton>
   </React.Fragment>
 );

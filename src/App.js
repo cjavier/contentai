@@ -12,6 +12,7 @@ import Onboarding from './components/Onboarding';
 import ContentPage from './components/ContentPage';
 import OutlinePage from './components/OutlinePage';
 import ForgotPassword from './components/ForgotPassword';
+import Publish from './components/Publish';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import React, { useContext } from 'react';
 import { AuthContext } from './AuthContext';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/contenidos" element={<Contents />} />
           <Route path="/cuenta" element={<Account />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/publicar" element={<Publish />} />
           <Route path="/content/:keywordPlanId/:keywordId/:titleId" element={<ContentPage />} />
           <Route path="/outline/:keywordPlanId/:keywordId/:titleId" element={<OutlinePage />} />
         </Routes>
