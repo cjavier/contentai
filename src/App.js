@@ -23,6 +23,7 @@ import Slide from '@mui/material/Slide';
 import TitlesDisplay from './components/TitlesDisplay';
 import ContentsDisplay from './components/ContentsDisplay';
 import ContenidosPage from './components/Contenidos';
+import PublishDisplay from './components/PublishDisplay';
 
 function App() {
   const { currentUser } = useContext(AuthContext);
@@ -45,6 +46,7 @@ function App() {
           <Route path="/landing" element={<Landing />} />
           <Route path="/titles/:keywordPlanId" element={<TitlesDisplay />} />
           <Route path="/contents/:keywordPlanId" element={<ContentsDisplay />} />
+          <Route path="/publish/:keywordPlanId" element={<PublishDisplay />} />
           <Route path="/contenidos/:contentId" element={<ContenidosPage />} />
           <Route path="/keywords/:keywordPlanId" element={<KeywordsDisplay />} />
           <Route path="/content/:keywordPlanId/:keywordId/:titleId" element={<ContentPage />} />

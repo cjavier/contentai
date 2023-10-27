@@ -196,7 +196,7 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
       const userId = currentUser.uid; // Asegúrate de que currentUser y uid estén definidos correctamente
   
       // 1. Realizar la solicitud al servidor
-      const response = await fetch(`http://localhost:8080/createcontent?userId=${userId}&keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}`, {
+      const response = await fetch(`https://contentai-backend.onrender.com/createcontent?userId=${userId}&keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}`, {
         method: 'POST',
       });
   
@@ -256,7 +256,7 @@ const handleAllContentsCreation = async (keywordPlanId) => {
     setTotalOutlines(total);
 
     // Hacer la llamada al servidor para crear todos los contenidos
-    const response = await fetch(`http://localhost:8080/createallcontent?userId=${currentUser.uid}&keywordPlanId=${keywordPlanId}`, {
+    const response = await fetch(`https://contentai-backend.onrender.com/createallcontent?userId=${currentUser.uid}&keywordPlanId=${keywordPlanId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
