@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from '../firebase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from '../../firebase';
 import { Container, Avatar, Typography, Box, TextField, FormControlLabel, Checkbox, Button, Grid, Paper } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { getAuth } from '../firebase';
+import { getAuth } from '../../firebase';
 import { initializeApp } from "firebase/app";
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from '../../AuthContext';
 import { useNavigate } from 'react-router-dom'; 
 
 

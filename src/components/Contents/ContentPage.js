@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from '../../AuthContext';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
-import Layout from './Layout';
+import Layout from '../Layout/Layout';
 import Button from '@mui/material/Button';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 

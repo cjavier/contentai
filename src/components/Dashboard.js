@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import Layout from './Layout';
+import Layout from './Layout/Layout';
 import Box from '@mui/material/Box';  
 
 export default function Dashboard() {

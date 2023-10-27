@@ -1,12 +1,12 @@
 import React, { useContext } from 'react';
 import Grid from '@mui/material/Grid';
 import { Box } from '@mui/material';
-import Layout from './Layout';
+import Layout from '../Layout/Layout';
 import Logout from './Logout';
 import AccountSettings from './AccountSettings';
 import AccountAPI from './AccountAPI';
 import AccountWordpress from './AccountWordpress';
-import { AuthContext } from '../AuthContext'; 
+import { AuthContext } from '../../AuthContext'; 
 
 
 

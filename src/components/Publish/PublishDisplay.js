@@ -16,11 +16,11 @@ import Backdrop from '@mui/material/Backdrop';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
-import Title from './Title';
+import Title from '../Titles/Title';
 import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc, FieldValue, deleteField } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from '../../AuthContext';
 import axios from 'axios';
-import Layout from './Layout';
+import Layout from '../Layout/Layout';
 
 
 

@@ -5,7 +5,7 @@ import { AuthContext } from '../AuthContext';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
-import Layout from './Layout';
+import Layout from './Layout/Layout';
 import Button from '@mui/material/Button';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 

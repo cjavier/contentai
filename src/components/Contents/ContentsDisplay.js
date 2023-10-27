@@ -18,36 +18,18 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import OutlineIcon from '@mui/icons-material/List'; 
 import Modal from '@mui/material/Modal';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'; 
-import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
-import Title from './Title';
+import Title from '../Titles/Title';
 import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
-import { CallOpenAIOutline, CallOpenAIContent } from './OpenAI'; 
-import Layout from './Layout';
-
-
-function CircularProgressWithLabel(props) {
-  return (
-    <Box position="relative" display="inline-flex">
-      <CircularProgress variant="determinate" {...props} />
-      <Box
-        top={0}
-        left={0}
-        bottom={0}
-        right={0}
-        position="absolute"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Typography variant="caption" component="div" color="textSecondary">
-          {`${Math.round(props.value)}%`}
-        </Typography>
-      </Box>
-    </Box>
-  );
-}
+import { AuthContext } from '../../AuthContext';
+import { CallOpenAIOutline, CallOpenAIContent } from '../OpenAI'; 
+import Layout from '../Layout/Layout';
+import CircularProgressWithLabel from './CircularProgressWithLabel';
+import { handleOutlineCreation as handleOutlineCreationHandler } from '../Handlers';
+import { handleContentCreation as handleContentCreationHandler } from '../Handlers';
+import { handleAllContentsCreation as handleAllContentsCreationHandler } from '../Handlers';
+import { handleAllOutlinesDelete as handleAllOutlinesDeleteHandler } from '../Handlers';
+import ConfirmationModal from './ConfirmationModal';
 
 
 export default function ContentsDisplay() {
@@ -65,9 +47,6 @@ export default function ContentsDisplay() {
   const [openModal, setOpenModal] = useState(false);
 const [actionToConfirm, setActionToConfirm] = useState(null);
 const [openDeleteModal, setOpenDeleteModal] = useState(false);
-
-
-
 
   const loadKeywordPlans = async () => {
     if (!currentUser || !keywordPlanId) {
@@ -131,100 +110,45 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
     } else {
       loadKeywordPlans();
     }
-    
-  
-  
   
     loadKeywordPlans();
   }, [currentUser]);
 
   
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
-    try {
-      const db = getFirestore();
-  
-      // 1. Obtener la keyword, el título y el buyerpersonaid
-      const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-      const keyword = keywordPlan.keywords.find(k => k.id === keywordId);
-      const titleObj = keyword.titles.find(t => t.id === titleId);
-      const buyerPersonaId = keywordPlan.buyerpersonaid;
-  
-      // 2. Obtener el buyerpersona_prompt usando el buyerPersonaId
-      const buyerPersonaDoc = await getDoc(doc(db, 'buyerpersonas', buyerPersonaId)); // Asumiendo que la colección se llama 'buyerPersonas'
-      const buyerpersona_prompt = buyerPersonaDoc.data().buyerpersona_prompt;
-  
-      // 3. Llamar a la función CallOpenAIOutline con el título, la keyword y el buyerpersona_prompt
-      const outline = await CallOpenAIOutline(titleObj.title, keyword.keyword, buyerpersona_prompt, currentUser.uid);
-  
-      // 4. Recibir el outline y guardarlo en la propiedad outline del título correspondiente en Firestore
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        outline: outline
-      });
-  
-      console.log('Outline creado exitosamente.');
-  
-      // Actualizar el estado local para reflejar el cambio
-      setKeywordPlans(prevKeywordPlans => {
-        return prevKeywordPlans.map(kp => {
-          if (kp.id === keywordPlanId) {
-            kp.keywords = kp.keywords.map(k => {
-              if (k.id === keywordId) {
-                k.titles = k.titles.map(t => {
-                  if (t.id === titleId) {
-                    t.outline = outline;
-                  }
-                  return t;
-                });
-              }
-              return k;
-            });
-          }
-          return kp;
-        });
-      });
-  
-    } catch (error) {
-      console.error('Error al crear el outline:', error);
-    }
+    await handleOutlineCreationHandler(keywordPlanId, keywordId, titleId, currentUser, setKeywordPlans, keywordPlans);
   };
   
-
-
   const handleContentCreation = async (keywordPlanId, keywordId, titleId) => {
-    try {
-      const userId = currentUser.uid; // Asegúrate de que currentUser y uid estén definidos correctamente
+    await handleContentCreationHandler(keywordPlanId, keywordId, titleId, currentUser);
+  };
+
+  const handleAllContentsCreation = async (keywordPlanId) => {
+    setIsLoading(true);
+    setBackdropMessage('Comenzando con la producción de contenido');
   
-      // 1. Realizar la solicitud al servidor
-      const response = await fetch(`https://contentai-backend.onrender.com/createcontent?userId=${userId}&keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}`, {
-        method: 'POST',
-      });
+    const result = await handleAllContentsCreationHandler(keywordPlanId, currentUser);
   
-      // 2. Verificar si la solicitud fue exitosa
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status} - ${response.statusText}`);
-      }
-  
-      // 3. Leer la respuesta del servidor
-      const result = await response.text();
-      console.log(result);
-  
-    } catch (error) {
-      console.error('Error al crear el contenido:', error);
+    if (result.status === 'ok') {
+      setBackdropMessage('Tu Contenido esta siendo producido, puedes cerrar la ventana');
+      setTimeout(() => {
+        setBackdropMessage('');
+        setIsLoading(false);
+      }, 5000);
+    } else {
+      setBackdropMessage(result.message);
+      setIsLoading(false);
     }
   };
   
-
 const handleAllOutlinesCreation = async (keywordPlanId) => {
   try {
     setIsLoading(true);
     setBackdropMessage('Creando todos los Outlines...');
-
     const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
     let completed = 0;
     const total = keywordPlan.keywords.reduce((acc, keyword) => acc + keyword.titles.length, 0);
     setTotalOutlines(total);
-
     for (const keyword of keywordPlan.keywords) {
       for (const title of keyword.titles) {
         if (!title.outline) {
@@ -235,7 +159,6 @@ const handleAllOutlinesCreation = async (keywordPlanId) => {
         }
       }
     }
-
     console.log('Outlines creados exitosamente para todos los títulos que lo requerían.');
   } catch (error) {
     console.error('Error al crear outlines para todos los títulos:', error);
@@ -245,72 +168,27 @@ const handleAllOutlinesCreation = async (keywordPlanId) => {
   }
 };
 
-
-const handleAllContentsCreation = async (keywordPlanId) => {
-  try {
-    setIsLoading(true);
-    setBackdropMessage('Creando todos los Contenidos...');
-
-    const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-    const total = keywordPlan.keywords.reduce((acc, keyword) => acc + keyword.titles.length, 0);
-    setTotalOutlines(total);
-
-    // Hacer la llamada al servidor para crear todos los contenidos
-    const response = await fetch(`https://contentai-backend.onrender.com/createallcontent?userId=${currentUser.uid}&keywordPlanId=${keywordPlanId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Error al crear contenidos en el servidor');
-    }
-
-    console.log('Contenidos en proceso de creación.');
-    setBackdropMessage('Contenidos creados exitosamente');
-  } catch (error) {
-    console.error('Error al crear contenidos para todos los títulos:', error);
-    setBackdropMessage('Error al crear contenidos');
-  } finally {
-    setIsLoading(false);
-    setBackdropMessage('');
-  }
-};
-
-
-
 const handleAllOutlinesDelete = async (keywordPlanId) => {
   try {
     setIsLoading(true);
     setBackdropMessage('Borrando todos los Outlines...');
 
-    const db = getFirestore();
-    const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-    let completed = 0;
-    const total = keywordPlan.keywords.reduce((acc, keyword) => acc + keyword.titles.length, 0);
-    setTotalOutlines(total);
+    const result = await handleAllOutlinesDeleteHandler(keywordPlanId, keywordPlans);
 
-    for (const keyword of keywordPlan.keywords) {
-      for (const title of keyword.titles) {
-        if (title.outline) {  // Verifica si el título tiene un outline
-          const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keyword.id, 'titles', title.id);
-          await updateDoc(titleRef, {
-            outline: ''  // Establece la propiedad outline a una cadena vacía
-          });
-          completed++;
-          setCompletedOutlines(completed);
-          setBackdropMessage(`Borrando Outline ${completed} de ${total}`);
-        }
-      }
+    if (result.status === 'ok') {
+      setBackdropMessage('Tus outlines han sido borrados exitosamente');
+      setTimeout(() => {
+        setBackdropMessage('');
+        setIsLoading(false);
+      }, 5000);
+    } else {
+      setBackdropMessage(result.message);
+      setIsLoading(false);
     }
-
-    console.log('Outlines borrados exitosamente para todos los títulos que lo requerían.');
   } catch (error) {
     console.error('Error al borrar todos los outlines:', error);
-  } finally {
+    setBackdropMessage('Error al borrar los outlines');
     setIsLoading(false);
-    setBackdropMessage('');
   }
 };
   
@@ -341,28 +219,34 @@ const handleAllOutlinesDelete = async (keywordPlanId) => {
     p: 4,
   };
 
-  const handleOpenCreateModal = (action) => {
-    setActionToConfirm(() => action); // Cambia esta línea
-    setOpenModal(true);
+  const [modalProps, setModalProps] = useState({
+    open: false,
+    title: '',
+    description: '',
+    onConfirm: null,
+  });
+
+  const handleOpenModal = (title, description, onConfirm) => {
+    setModalProps({
+      open: true,
+      title,
+      description,
+      onConfirm,
+    });
   };
 
-  const handleOpenDeleteModal = (action) => {
-    setActionToConfirm(() => action);  // Setea la acción a confirmar
-    setOpenDeleteModal(true);  // Abre el modal de eliminar
+  const handleCloseModal = () => {
+    setModalProps({ ...modalProps, open: false });
   };
   
   
   const handleConfirmAction = () => {
-    if (typeof actionToConfirm === 'function') {
-      actionToConfirm(); // La función se ejecutará aquí después de la confirmación
-      handleCloseModal();
+    if (typeof modalProps.onConfirm === 'function') {
+      modalProps.onConfirm(); // La función se ejecutará aquí después de la confirmación
+      handleCloseModal(); // Cierra el modal después de confirmar
     } else {
-      console.error('actionToConfirm is not a function', actionToConfirm);
+      console.error('onConfirm is not a function', modalProps.onConfirm);
     }
-  };
-  
-  const handleCloseModal = () => {
-    setOpenModal(false);
   };
   
   return (
@@ -432,20 +316,19 @@ const handleAllOutlinesDelete = async (keywordPlanId) => {
           <BottomNavigationAction 
             label="Crear Outlines" 
             icon={<OutlineIcon />} 
-            onClick={() => handleOpenCreateModal(() => handleAllOutlinesCreation(keywordPlan.id))} // Cambia esta línea
-          />
+            onClick={() => handleOpenModal('Confirmación', 'Estás a punto de generar gran cantidad de contenidos. Este proceso puede demorar varias horas y costar dinero. ¿Estás seguro de que deseas continuar?', () => handleAllOutlinesCreation(keywordPlan.id))}
+            />
           <BottomNavigationAction 
             label="Borrar todos los Outlines" 
             icon={<ContentCopyIcon />} 
-            onClick={() => handleOpenDeleteModal(() => handleAllOutlinesDelete(keywordPlan.id))} // Cambia esta línea
-          />
+            onClick={() => handleOpenModal('Confirmación de Eliminación', 'Vas a borrar todos tus outlines, ¿deseas continuar?', () => handleAllOutlinesDelete(keywordPlan.id))}
+            />
           <BottomNavigationAction 
             label="Crear Contenidos" 
             icon={<ContentCopyIcon />} 
-            onClick={() => handleOpenCreateModal(() => handleAllContentsCreation(keywordPlan.id))} // Y esta línea
-          />
+            onClick={() => handleOpenModal('Confirmación', 'Estás a punto de generar gran cantidad de contenidos. Este proceso puede demorar varias horas y costar dinero. ¿Estás seguro de que deseas continuar?', () => handleAllContentsCreation(keywordPlan.id))}
+            />
         </BottomNavigation>
-        
           </Paper>
         </Grid>
       ))}
@@ -459,45 +342,13 @@ const handleAllOutlinesDelete = async (keywordPlanId) => {
   </Typography>
 </Backdrop>
     </Grid>
-    <Modal
-      open={openModal}
+    <ConfirmationModal
+      open={modalProps.open}
+      title={modalProps.title}
+      description={modalProps.description}
+      onConfirm={handleConfirmAction}
       onClose={handleCloseModal}
-      aria-labelledby="modal-modal-title"
-      aria-describedby="modal-modal-description"
-    >
-      <Box sx={style}>
-        <Typography id="modal-modal-title" variant="h6" component="h2">
-          Confirmación
-        </Typography>
-        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-          Estás a punto de generar gran cantidad de contenidos. Este proceso puede demorar varias horas y costar dinero. ¿Estás seguro de que deseas continuar?
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-          <Button sx={{ mr: 2 }} onClick={handleCloseModal}>Cancelar</Button>
-          <Button variant="contained" onClick={handleConfirmAction}>Confirmar</Button>
-        </Box>
-      </Box>
-    </Modal>
-    <Modal
-      open={openDeleteModal}
-      onClose={() => setOpenDeleteModal(false)}
-      aria-labelledby="delete-modal-title"
-      aria-describedby="delete-modal-description"
-    >
-      <Box sx={style}>
-        <Typography id="delete-modal-title" variant="h6" component="h2">
-          Confirmación de Eliminación
-        </Typography>
-        <Typography id="delete-modal-description" sx={{ mt: 2 }}>
-          Vas a borrar todos tus outlines, ¿deseas continuar?
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-          <Button sx={{ mr: 2 }} onClick={() => setOpenDeleteModal(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleConfirmAction}>Confirmar</Button>
-        </Box>
-      </Box>
-    </Modal>
-
+    />
     </Layout>
     
   );

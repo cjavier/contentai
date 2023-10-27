@@ -4,7 +4,7 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import { doc, setDoc, getFirestore, collection, getDoc, getDocs, query, where } from 'firebase/firestore'; 
-import { AuthContext } from '../AuthContext'; 
+import { AuthContext } from '../../AuthContext'; 
 
 export default function AccountSettings({ onSubmitSuccess, submitButtonText = "Actualizar datos" }) {
     const [formData, setFormData] = useState({

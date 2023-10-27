@@ -1,7 +1,7 @@
 import React from 'react';
 import KeywordsCreate from './KeywordsCreate';
 import KeywordPlanDisplay from './KeywordPlanDisplay';
-import Layout from './Layout';
+import Layout from '../Layout/Layout';
 
 
 const Keywords = () => {

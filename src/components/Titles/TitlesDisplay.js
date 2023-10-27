@@ -14,8 +14,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Title from './Title';
 import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
-import Layout from './Layout';
+import { AuthContext } from '../../AuthContext';
+import Layout from '../Layout/Layout';
 
 
 export default function TitlesDisplay() {

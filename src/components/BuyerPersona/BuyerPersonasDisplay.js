@@ -8,7 +8,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { collection, getFirestore, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from '../../AuthContext';
 
 export default function BuyerPersonasDisplay() {
   const [buyerPersonas, setBuyerPersonas] = useState([]);

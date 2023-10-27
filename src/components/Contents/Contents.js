@@ -1,7 +1,7 @@
 import React from 'react';
 import ContentsDisplay from './ContentsDisplay';
-import Layout from './Layout';
-import KeywordPlanDisplay from './KeywordPlanDisplay';
+import Layout from '../Layout/Layout';
+import KeywordPlanDisplay from '../Keywords/KeywordPlanDisplay';
 
 
 const Contents = () => {

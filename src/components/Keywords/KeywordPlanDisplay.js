@@ -2,9 +2,9 @@ import React, { useContext, useEffect, useState } from 'react';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import { Link } from 'react-router-dom'; 
-import Title from './Title';
+import Title from '../Titles/Title';
 import { collection, getFirestore, getDocs, query, where, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
+import { AuthContext } from '../../AuthContext';
 
 
 export default function KeywordPlanDisplay({ linkType }) {

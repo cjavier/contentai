@@ -8,7 +8,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { getFirestore, collection, addDoc } from 'firebase/firestore'; 
-import { AuthContext } from '../AuthContext'; 
+import { AuthContext } from '../../AuthContext'; 
 
 export default function KeywordsCreate() {
     const [keywords, setKeywords] = React.useState('');

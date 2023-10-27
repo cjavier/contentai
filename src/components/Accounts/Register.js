@@ -6,7 +6,7 @@ import {
   TextField, Button, Grid
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { getAuth, createUserWithEmailAndPassword } from '../firebase';
+import { getAuth, createUserWithEmailAndPassword } from '../../firebase';
 
 const Register = () => {
   const [email, setEmail] = useState('');

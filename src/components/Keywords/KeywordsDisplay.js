@@ -27,11 +27,11 @@ import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import AddIcon from '@mui/icons-material/Add';
 import TitleIcon from '@mui/icons-material/Title';
-import Title from './Title';
+import Title from '../Titles/Title';
 import { collection, getFirestore, getDocs, query, where, doc, getDoc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../AuthContext';
-import { CallOpenAITitle } from './OpenAI'; 
-import Layout from './Layout';
+import { AuthContext } from '../../AuthContext';
+import { CallOpenAITitle } from '../OpenAI'; 
+import Layout from '../Layout/Layout';
 
 
 export default function KeywordsDisplay() {
