@@ -1,6 +1,6 @@
 import React from 'react';
 import KeywordsCreate from './KeywordsCreate';
-import KeywordsDisplay from './KeywordsDisplay';
+import KeywordPlanDisplay from './KeywordPlanDisplay';
 import Layout from './Layout';
 
 
@@ -9,7 +9,7 @@ const Keywords = () => {
     <Layout>
 
       <KeywordsCreate />
-      <KeywordsDisplay />
+      <KeywordPlanDisplay linkType="keywords" />
     </Layout>
   );
 };

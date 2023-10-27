@@ -44,12 +44,34 @@ const saveTokenUsage = async (usage, userId, type) => {
   };
 
 export const CallOpenAIOutline = async (title, keyword, buyerpersona_prompt, userId) => {
-    const systemPrompt = buyerpersona_prompt;
-    console.log(systemPrompt);
-    const userPrompt = `Crea el outline para un contenido con el título: ${title}. La keyword es: ${keyword}. No pongas nada relacionado a ejemplos que requieran de información especifica del negocio ni casos de éxito particulares ni de ejemplos particulares.`;
-    console.log(userPrompt);
+  const systemPrompt = buyerpersona_prompt;
+  const userPrompt = `Crea un outline de por lo menos 5 subtitulos para un contenido con el título: ${title}. La keyword principal es: ${keyword}. No pongas nada relacionado a ejemplos que requieran de información especifica del negocio ni casos de éxito particulares ni de ejemplos particulares.`;
     const apiKey = await getOpenAIKey(userId);
     const url = "https://api.openai.com/v1/chat/completions";
+    const schema = {
+      type: "object",
+      properties: {
+          subtitles: {
+              type: "array",
+              description: "Lista de 5 subtítulos optimizados para SEO",
+              items: {
+                  type: "object",
+                  properties: {
+                      h2: { type: "string", description: "Texto del subtítulo" },
+                      description: { type: "string", description: "Descripción del contenido que puede contener el subtitulo para apoyar al SEO" },
+                      h3_1: { type: "string", description: "Posible subtitulo secundario para SEO" },
+                      h3_2: { type: "string", description: "Posible subtitulo secundario para SEO" },
+                      h3_3: { type: "string", description: "Posible subtitulo secundario para SEO" },
+                  },
+                  required: ["text", "description", "h3_1", "h3_2", "h3_3"]
+              }
+          }
+      },
+      required: ["subtitles"]
+  };
+  
+  
+
     const options = {
       method: "POST",
       headers: {
@@ -62,6 +84,11 @@ export const CallOpenAIOutline = async (title, keyword, buyerpersona_prompt, use
           {"role": "system", "content": systemPrompt},
           {"role": "user", "content": userPrompt}
         ],
+        functions: [
+          {name: "get_movie_data", "parameters": schema}
+
+        ],
+        function_call: {name: "get_movie_data"},
         "temperature": 0.7
       })
     };
@@ -69,71 +96,37 @@ export const CallOpenAIOutline = async (title, keyword, buyerpersona_prompt, use
     try {
       const response = await fetch(url, options);
       const data = await response.json();
-  
-      const outline = data.choices[0].message.content;
+      let outline = data.choices[0].message.function_call.arguments;
+      console.log(outline);
       console.log(data.usage);
       await saveTokenUsage(data.usage, userId, "outline");
 
-      
-      return outline;
+    
+
+
+    return outline;
     } catch (error) {
       console.error('Error al llamar a OpenAI:', error);
       return [];
     }
 };
 
-export const CallOpenAIContent3 = async (title, keyword, outline, buyerpersona_prompt, content_prompt, userId) => {
-  const systemPrompt = `${buyerpersona_prompt}. Los detalles importantes son que ${content_prompt}. No saludes a los lectores, no te despidas de ellos ni firmes los textos, No pongas ningun texto que requiera ser cambiado por el usuario.`;
-  const userPrompt = `Crea el mejor contenido que puedas para un blog con el título: ${title}. La keyword principal es: ${keyword}. Y el outline del contenido es: ${outline}. `;
-  console.log(systemPrompt);
-  console.log(userPrompt);
-  const apiKey = await getOpenAIKey(userId);
-  const url = "https://api.openai.com/v1/chat/completions";
-  const options = {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      "model": "gpt-3.5-turbo",
-      "messages": [
-        {"role": "system", "content": systemPrompt},
-        {"role": "user", "content": userPrompt}
-      ],
-      "temperature": 0.9
-    })
-  };
 
-  try {
-    const response = await fetch(url, options);
-    const data = await response.json();
-    //console.log(options);
-
-    const outline = data.choices[0].message.content;
-    console.log(data.usage);
-    await saveTokenUsage(data.usage, userId, "blog-content");
-
-    
-    return outline;
-  } catch (error) {
-    console.error('Error al llamar a OpenAI:', error);
-    return [];
-  }
-};
 
 export const CallOpenAIContent = async (title, keyword, outline, buyerpersona_prompt, content_prompt, userId) => {
-  const systemPrompt = `${buyerpersona_prompt}. Los detalles importantes son que ${content_prompt}. No saludes a los lectores, no te despidas de ellos ni firmes los textos, No pongas ningun texto que requiera ser cambiado por el usuario.`;
+  const systemPrompt = `${buyerpersona_prompt}. Los detalles importantes son que ${content_prompt}. No saludes a los lectores, no te despidas de ellos ni firmes los textos, No pongas ningun texto que requiera ser cambiado por el usuario. Dame el resultado en formato HTML.`;
 
-  // Dividir el outline en secciones individuales
-  const splitSections = outline.split(/^([IVXLCDM]+\.\s)/m);
+  // Parsear el outline
+  const sections = outline.split(/<h2>/).slice(1).map(section => {
+    const [title, ...content] = section.split(/<\/?h[23]>/);
+    return { title: title.trim(), content: content.join('').trim() };
+  });
+  console.log('Número de secciones:', sections.length);
+  sections.forEach((section, index) => {
+    console.log(`Sección ${index + 1}:`, section.title);
+    console.log('Contenido:', section.content);
+  });
 
-const combinedSections = [];
-for (let i = 1; i < splitSections.length; i += 2) {
-  combinedSections.push(splitSections[i] + splitSections[i + 1]);
-}
-
-console.log(combinedSections);
   let fullContent = '';
   const apiKey = await getOpenAIKey(userId);
   const url = "https://api.openai.com/v1/chat/completions";
@@ -145,9 +138,8 @@ console.log(combinedSections);
     }
   };
 
-  for (let section of combinedSections) {
-    //const userPrompt = `Estoy creando un contenido de blog con el título: ${title}. La keyword principal es: ${keyword}. Y el outline del contenido es: ${outline}. Ahorita vamos a crear solo la sección ${section.trim()}, dame el texto únicamente para esa sección. No incluyas todos los subtitulos textualmente, crea el contenido de todos de manera coherente pero no es necesario que agregues el subtitulo textualmente, solo incluye en el texto textualmente de los subtitulos más relevantes.`;
-    const userPrompt = `Estoy creando un contenido de blog con el título: ${title}. La keyword principal es: ${keyword}. Y el outline del contenido es: ${outline}. Ahorita vamos a crear solo la sección ${section.trim()}, dame el texto únicamente para esa sección.`;
+  for (let { title: sectionTitle, content } of sections) {
+    const userPrompt = `Estoy creando un contenido de blog con el título: ${title}. La keyword principal es: ${keyword}. Ahorita vamos a crear la sección "${sectionTitle}", que incluye los siguientes puntos: ${content}. Dame el texto únicamente para esta sección en formato HTML.`;
     options.body = JSON.stringify({
       "model": "gpt-3.5-turbo",
       "messages": [
@@ -159,15 +151,13 @@ console.log(combinedSections);
 
     try {
       const response = await fetch(url, options);
-      console.log(userPrompt);
       const data = await response.json();
       const sectionContent = data.choices[0].message.content;
-      fullContent += sectionContent + "\n\n"; // Concatenar el contenido de cada sección
+      fullContent += `<h2>${sectionTitle}</h2>\n${sectionContent}\n`; // Concatenar el contenido de cada sección
       await saveTokenUsage(data.usage, userId, "blog-content");
-      console.log(data.usage);
     } catch (error) {
       console.error('Error al llamar a OpenAI:', error);
-      return [];
+      return '';
     }
   }
 

@@ -1,36 +1,33 @@
-// src/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { getAuth } from './firebase';
-
 
 export const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-  const auth = getAuth();
+  const auth = useMemo(() => getAuth(), []);
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);  // Nuevo estado para manejar la carga
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-     // console.log('Usuario desde onAuthStateChanged:', user);
-      setCurrentUser(user);
-      setLoading(false);  // Actualizar el estado de carga una vez que se recibe el usuario
-    });
+    const unsubscribe = auth.onAuthStateChanged(
+      user => {
+        setCurrentUser(user);
+        setLoading(false);
+        setError(null);
+      },
+      error => {
+        console.error("Firebase Auth Error:", error);
+        setLoading(false);
+        setError(error);
+      }
+    );
     return unsubscribe;
   }, [auth]);
 
-  useEffect(() => {
-    if (currentUser) {
-      console.log('Nombre del usuario:', currentUser.email);
-    }
-  }, [currentUser]);  // Este useEffect se ejecutará cada vez que currentUser cambie
+  const contextValue = useMemo(() => ({ currentUser, loading, error }), [currentUser, loading, error]);
 
-  return (
-    <AuthContext.Provider value={{ currentUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
 
 export default AuthProvider;

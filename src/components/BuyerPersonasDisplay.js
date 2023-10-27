@@ -12,7 +12,7 @@ import { AuthContext } from '../AuthContext';
 
 export default function BuyerPersonasDisplay() {
   const [buyerPersonas, setBuyerPersonas] = useState([]);
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, loading } = useContext(AuthContext);
   const [editingBuyerPersonaId, setEditingBuyerPersonaId] = useState(null);
   const [editingBuyerPersona, setEditingBuyerPersona] = useState({});
 
@@ -20,13 +20,14 @@ export default function BuyerPersonasDisplay() {
     setEditingBuyerPersonaId(buyerPersona.id);
     setEditingBuyerPersona(buyerPersona);
   };
-  
 
   useEffect(() => {
+
+  
     if (!currentUser) {
       console.error('Usuario no autenticado. No se pueden cargar los Buyer Personas.');
-      return;
-    }
+      return ;
+    } 
 
     const loadBuyerPersonas = async () => {
       try {
@@ -59,6 +60,8 @@ export default function BuyerPersonasDisplay() {
     // Cargar los Buyer Personas cuando el componente se monte
     loadBuyerPersonas();
   }, [currentUser]);
+
+  
 
   const handleDeleteBuyerPersona = async (buyerPersonaId) => {
     try {
@@ -111,10 +114,10 @@ export default function BuyerPersonasDisplay() {
       <Grid item xs={12}>
       
           <Typography variant="h6">Buyer Personas</Typography>
-            {buyerPersonas.map((buyerPersona, index) => (
-                <Grid item xs={12} key={index} sx={{ pb: 2 }}>
+            {buyerPersonas.map((buyerPersona) => (
+                <Grid item xs={12} key={buyerPersona.id} sx={{ pb: 2 }}>
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-              <div key={index}>
+              <div key={buyerPersona.id}>
               <Typography>
                 <strong>Nombre: </strong> 
                 {editingBuyerPersonaId === buyerPersona.id ? (

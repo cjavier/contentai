@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
@@ -12,14 +13,22 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Title from './Title';
-import { collection, getFirestore, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../AuthContext';
+import Layout from './Layout';
+
 
 export default function TitlesDisplay() {
   const [keywordPlans, setKeywordPlans] = useState([]);
   const { currentUser } = useContext(AuthContext);
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
+  const { keywordPlanId } = useParams();
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const itemsPerPage = 10;
+
+  
 
 
   useEffect(() => {
@@ -29,52 +38,56 @@ export default function TitlesDisplay() {
     }
   
     const loadKeywordPlans = async () => {
+      const cachedKeywordPlans = sessionStorage.getItem(`keywordPlans_${keywordPlanId}`);
+      if (cachedKeywordPlans) {
+        setKeywordPlans(JSON.parse(cachedKeywordPlans));
+        return;
+      }
       try {
         const db = getFirestore();
-  
-        // Obtener la colección de KeywordPlans desde Firestore
-        const keywordPlansCollection = collection(db, 'keywordsplans');
-  
-        // Consultar los documentos de KeywordPlans asociados al usuario actual
-        const q = query(keywordPlansCollection, where('userId', '==', currentUser.uid));
-        const querySnapshot = await getDocs(q);
-  
-        const keywordPlansData = [];
-  
-        for (const keywordPlanDoc of querySnapshot.docs) {
-          const keywordsSnapshot = await getDocs(collection(keywordPlanDoc.ref, 'keywords'));
-          
-          const keywords = [];
-          for (const keywordDoc of keywordsSnapshot.docs) {
-            const keywordData = {
-              id: keywordDoc.id,
-              ...keywordDoc.data()
-            };
     
-            // Recuperar los títulos para esta keyword
-            const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-            keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
-              id: titleDoc.id,
-              title: titleDoc.data().title
-            }));
+        // Obtener una referencia al documento específico de KeywordPlan
+        const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
+        const keywordPlanDoc = await getDoc(keywordPlanRef);
     
-            keywords.push(keywordData);
-          }
-        
-          const keywordPlan = {
-            id: keywordPlanDoc.id,
-            ...keywordPlanDoc.data(),
-            keywords
-          };
-        
-          keywordPlansData.push(keywordPlan);
+        if (!keywordPlanDoc.exists()) {
+          console.error('El KeywordPlan no existe');
+          return;
         }
     
-        setKeywordPlans(keywordPlansData);
+        const keywordsSnapshot = await getDocs(collection(keywordPlanRef, 'keywords'));
+        const keywords = [];
+    
+        for (const keywordDoc of keywordsSnapshot.docs) {
+          const keywordData = {
+            id: keywordDoc.id,
+            ...keywordDoc.data()
+          };
+    
+          // Recuperar los títulos para esta keyword
+          const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
+          keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
+            id: titleDoc.id,
+            title: titleDoc.data().title
+          }));
+    
+          keywords.push(keywordData);
+        }
+    
+        const keywordPlan = {
+          id: keywordPlanDoc.id,
+          ...keywordPlanDoc.data(),
+          keywords
+        };
+    
+        setKeywordPlans([keywordPlan]);
+        sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify([keywordPlan]));
       } catch (error) {
         console.error('Error al cargar los KeywordPlans:', error);
       }
+      
     };
+    
   
     loadKeywordPlans();
   }, [currentUser]);
@@ -109,6 +122,7 @@ export default function TitlesDisplay() {
     } catch (error) {
       console.error('Error al eliminar el título:', error);
     }
+    sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify(keywordPlans));
   };
   
 
@@ -155,6 +169,7 @@ export default function TitlesDisplay() {
     } catch (error) {
       console.error('Error al editar el título:', error);
     }
+    sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify(keywordPlans));
   };
   
 
@@ -175,6 +190,7 @@ export default function TitlesDisplay() {
   
 
   return (
+    <Layout>
     <Grid item xs={12}>
       {keywordPlans.map((keywordPlan) => (
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
@@ -232,5 +248,6 @@ export default function TitlesDisplay() {
         </Grid>
       ))}
     </Grid>
+    </Layout>
   );
 }

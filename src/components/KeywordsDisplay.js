@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
@@ -22,13 +23,19 @@ import Select from '@mui/material/Select';
 import CircularProgress from '@mui/material/CircularProgress';
 import Backdrop from '@mui/material/Backdrop';
 import TextField from '@mui/material/TextField';
+import BottomNavigation from '@mui/material/BottomNavigation';
+import BottomNavigationAction from '@mui/material/BottomNavigationAction';
+import AddIcon from '@mui/icons-material/Add';
+import TitleIcon from '@mui/icons-material/Title';
 import Title from './Title';
-import { collection, getFirestore, getDocs, query, where, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, getFirestore, getDocs, query, where, doc, getDoc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../AuthContext';
 import { CallOpenAITitle } from './OpenAI'; 
+import Layout from './Layout';
 
 
 export default function KeywordsDisplay() {
+  const { keywordPlanId } = useParams();
   const [keywordPlans, setKeywordPlans] = useState([]);
   const { currentUser } = useContext(AuthContext);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
@@ -41,6 +48,9 @@ export default function KeywordsDisplay() {
   const [newKeywords, setNewKeywords] = useState('');
   const [editingKeywordId, setEditingKeywordId] = useState(null);
   const [editingKeywordValue, setEditingKeywordValue] = useState('');
+  const [keywordsCache, setKeywordsCache] = useState({});
+const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
+
 
   const handleEditKeywordStart = (keywordId, keywordValue) => {
     setEditingKeywordId(keywordId);
@@ -70,48 +80,49 @@ export default function KeywordsDisplay() {
     }
 
     const loadKeywordPlans = async () => {
-
+      if (!currentUser || !keywordPlanId) {
+        console.error('Usuario no autenticado o keywordPlanId no proporcionado. No se pueden cargar los KeywordPlans.');
+        return;
+      }
+    
       try {
         const db = getFirestore();
-
-        // Obtener la colección de KeywordPlans desde Firestore
-        const keywordPlansCollection = collection(db, 'keywordsplans');
-
-        // Consultar los documentos de KeywordPlans asociados al usuario actual
-        const q = query(keywordPlansCollection, where('userId', '==', currentUser.uid));
-        const querySnapshot = await getDocs(q);
-
-        const keywordPlansData = [];
-
-        for (const keywordPlanDoc of querySnapshot.docs) {
-          const keywordsSnapshot = await getDocs(collection(keywordPlanDoc.ref, 'keywords'));
-          
-          const keywords = [];
-          for (const keywordDoc of keywordsSnapshot.docs) {
-            const keywordData = {
-              id: keywordDoc.id,
-              ...keywordDoc.data()
-            };
     
-            // Recuperar los títulos para esta keyword
-            const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-            keywordData.titles = titlesSnapshot.docs.map(titleDoc => titleDoc.data());
+        // Obtener una referencia al documento del KeywordPlan específico
+        const keywordPlanDocRef = doc(db, 'keywordsplans', keywordPlanId);
     
-            keywords.push(keywordData);
-          }
-        
-          const keywordPlan = {
-            id: keywordPlanDoc.id,
-            ...keywordPlanDoc.data(),
-            keywords
-          };
-        
-          keywordPlansData.push(keywordPlan);
+        // Obtener el documento del KeywordPlan
+        const keywordPlanDoc = await getDoc(keywordPlanDocRef);
+        if (!keywordPlanDoc.exists()) {
+          console.error('El KeywordPlan solicitado no existe.');
+          return;
         }
     
-        setKeywordPlans(keywordPlansData);
+        // Cargar las keywords asociadas al KeywordPlan
+        const keywordsSnapshot = await getDocs(collection(keywordPlanDocRef, 'keywords'));
+        const keywords = [];
+        for (const keywordDoc of keywordsSnapshot.docs) {
+          const keywordData = {
+            id: keywordDoc.id,
+            ...keywordDoc.data()
+          };
+    
+          // Recuperar los títulos para esta keyword
+          const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
+          keywordData.titles = titlesSnapshot.docs.map(titleDoc => titleDoc.data());
+    
+          keywords.push(keywordData);
+        }
+    
+        const keywordPlan = {
+          id: keywordPlanDoc.id,
+          ...keywordPlanDoc.data(),
+          keywords
+        };
+    
+        setKeywordPlans([keywordPlan]); // Establecer el estado con un array que contiene solo este KeywordPlan
       } catch (error) {
-        console.error('Error al cargar los KeywordPlans:', error);
+        console.error('Error al cargar el KeywordPlan:', error);
       }
     };
 
@@ -124,9 +135,13 @@ export default function KeywordsDisplay() {
       setBuyerPersonas(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
 
-    loadBuyerPersonas();
-    loadKeywordPlans();
-  }, [currentUser]);
+    if (!keywordsCache[keywordPlanId]) {
+      loadKeywordPlans();
+    }
+    if (!buyerPersonasCache[currentUser.uid]) {
+      loadBuyerPersonas();
+    }
+  }, [currentUser, keywordPlanId, keywordsCache, buyerPersonasCache]);
 
   const handleAddKeywords = async () => {
     try {
@@ -147,8 +162,10 @@ export default function KeywordsDisplay() {
   
       // Agregar cada keyword como un nuevo documento en la subcolección 'keywords' del KeywordsPlan seleccionado
       const keywordsArray = newKeywords.split('\n');
+      const newKeywordsData = [];
       for (let keyword of keywordsArray) {
-        await addDoc(collection(keywordsPlanDocRef, 'keywords'), { keyword });
+        const keywordRef = await addDoc(collection(keywordsPlanDocRef, 'keywords'), { keyword });
+        newKeywordsData.push({ id: keywordRef.id, keyword });
       }
   
       console.log('Keywords agregadas exitosamente al KeywordPlan.');
@@ -157,13 +174,23 @@ export default function KeywordsDisplay() {
       setNewKeywords('');
       setIsAddKeywordModalVisible(false);
   
-      // Recargar los KeywordPlans para reflejar los cambios
-     // loadKeywordPlans();
+      // Actualizar el estado directamente con las nuevas keywords
+      setKeywordPlans((prevKeywordPlans) =>
+        prevKeywordPlans.map((keywordPlan) =>
+          keywordPlan.id === selectedKeywordPlan
+            ? {
+                ...keywordPlan,
+                keywords: [...keywordPlan.keywords, ...newKeywordsData],
+              }
+            : keywordPlan
+        )
+      );
   
     } catch (error) {
       console.error('Error al agregar keywords al KeywordPlan:', error);
     }
   };
+  
   const handleDeleteKeywordPlan = async (keywordPlanId) => {
     try {
       const db = getFirestore();
@@ -307,6 +334,7 @@ export default function KeywordsDisplay() {
   
 
   return (
+    <Layout>
     <Grid item xs={12}>
       {/* Diálogo para seleccionar Buyer Persona */}
       <Dialog open={isPopupVisible} onClose={() => setIsPopupVisible(false)}>
@@ -368,8 +396,7 @@ export default function KeywordsDisplay() {
       {keywordPlans.map((keywordPlan) => (
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Keyword Plan: {keywordPlan.id}</Title>
-            <Button variant="contained" onClick={() => showTitleCreationPopup(keywordPlan.id)}>Crear Ideas de Títulos</Button>
+            <Title>Keyword Plan: {keywordPlan.planName}</Title>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -411,24 +438,26 @@ export default function KeywordsDisplay() {
             <EditIcon />
           </IconButton>
         )}
-      </TableCell>
-      <TableCell sx={{ textAlign: 'right' }}>
-        <IconButton
-          aria-label="delete"
-          color="error"
-          onClick={() => handleDeleteKeyword(keywordPlan.id, keyword.id)}
-        >
-          <DeleteIcon />
-        </IconButton>
-      </TableCell>
-    </TableRow>
+          </TableCell>
+          <TableCell sx={{ textAlign: 'right' }}>
+            <IconButton
+              aria-label="delete"
+              color="error"
+              onClick={() => handleDeleteKeyword(keywordPlan.id, keyword.id)}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </TableCell>
+        </TableRow>
   ))}
-</TableBody>
+              </TableBody>
             </Table>
-            <Button variant="outlined" color="success" onClick={() => handleOpenAddKeywordModal(keywordPlan.id)}>Agregar Keywords</Button>
-                <div style={{ height: '5px' }}></div> {/* Espaciado */}
-            <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteKeywordPlan(keywordPlan.id)}>Borrar Keyword Plan</Button>
-        </Paper>
+            <BottomNavigation showLabels>
+              <BottomNavigationAction label="Agregar Keywords" icon={<AddIcon />} onClick={() => handleOpenAddKeywordModal(keywordPlan.id)} />
+              <BottomNavigationAction label="Crear Ideas de Títulos" icon={<TitleIcon />} onClick={() => showTitleCreationPopup(keywordPlan.id)} />
+              <BottomNavigationAction label="Borrar Keyword Plan" icon={<DeleteIcon />} onClick={() => handleDeleteKeywordPlan(keywordPlan.id)} />
+            </BottomNavigation>
+          </Paper>
         </Grid>
       ))}
      <Backdrop open={isLoading} style={{ zIndex: 9999, color: '#fff', flexDirection: 'column' }}>
@@ -436,6 +465,7 @@ export default function KeywordsDisplay() {
     <Typography style={{ marginTop: 20 }}>{backdropMessage}</Typography>
 </Backdrop>
     </Grid>
+    </Layout>
     
 );
 

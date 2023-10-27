@@ -7,22 +7,22 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { doc, setDoc, getFirestore, collection, addDoc } from 'firebase/firestore'; 
+import { getFirestore, collection, addDoc } from 'firebase/firestore'; 
 import { AuthContext } from '../AuthContext'; 
 
 export default function KeywordsCreate() {
     const [keywords, setKeywords] = React.useState('');
-    const [planName, setPlanName] = React.useState(''); // Nuevo estado para el nombre del plan
+    const [planName, setPlanName] = React.useState('');
 
     const handleInputChange = (e) => {
       setKeywords(e.target.value);
     };
 
     const handlePlanNameChange = (e) => {
-      setPlanName(e.target.value); // Actualizar el estado del nombre del plan
+      setPlanName(e.target.value);
     };
   
-    const { currentUser } = useContext(AuthContext); // Obtener currentUser desde AuthContext
+    const { currentUser } = useContext(AuthContext);
   
     const handleSubmit = async () => {
       try {
@@ -33,16 +33,14 @@ export default function KeywordsCreate() {
   
           const db = getFirestore();
   
-          // Usar el nombre del plan como ID del documento
-          const keywordsPlanDocRef = doc(collection(db, 'keywordsplans'), planName);
-  
           // Crear un objeto con los datos básicos del KeywordsPlan
           const keywordsPlanData = {
-              userId: currentUser.uid, // Agregar el ID del usuario actual
+              userId: currentUser.uid,
+              planName: planName, // Guardar el nombre del plan como una propiedad
           };
   
-          // Usar setDoc para crear el documento usando la referencia que obtuviste
-          await setDoc(keywordsPlanDocRef, keywordsPlanData);
+          // Usar addDoc para crear el documento y obtener una referencia al documento creado
+          const keywordsPlanDocRef = await addDoc(collection(db, 'keywordsplans'), keywordsPlanData);
   
           // Agregar cada keyword como un nuevo documento en la subcolección 'keywords' del KeywordsPlan
           const keywordsArray = keywords.split('\n');
@@ -64,7 +62,7 @@ export default function KeywordsCreate() {
     <Grid item xs={12}>
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Agregar Keywords</Typography>
+          <Typography>Agregar Nuevo Plan de Keywords</Typography>
         </AccordionSummary>
         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
           <TextField
