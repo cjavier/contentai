@@ -9,7 +9,9 @@ import KeywordsDisplay from './components/Keywords/KeywordsDisplay';
 import Titles from './components/Titles/Titles';
 import Contents from './components/Contents/Contents';
 import Account from './components/Accounts/Account';
-import Onboarding from './components/Accounts/Onboarding';
+import Onboarding from './components/Onboarding/Onboarding';
+import OnboardingStripe from './components/Onboarding/Onboarding-stripe';
+import OnboardingApikey from './components/Onboarding/Onboarding-apikey';
 import ContentPage from './components/Contents/ContentPage';
 import OutlinePage from './components/OutlinePage';
 import ForgotPassword from './components/ForgotPassword';
@@ -42,6 +44,8 @@ function App() {
           <Route path="/contenidos" element={<Contents />} />
           <Route path="/cuenta" element={<Account />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/onboarding-stripe" element={<OnboardingStripe />} />
+          <Route path="/onboarding-apikey" element={<OnboardingApikey />} />
           <Route path="/publicar" element={<Publish />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/titles/:keywordPlanId" element={<TitlesDisplay />} />

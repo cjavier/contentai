@@ -1,13 +1,13 @@
 import React from 'react';
 import ContentsDisplay from './ContentsDisplay';
 import Layout from '../Layout/Layout';
-import KeywordPlanDisplay from '../Keywords/KeywordPlanDisplay';
+import ContentPlanDisplay from './ContentPlanDisplay';
 
 
 const Contents = () => {
   return (
     <Layout>
-      <KeywordPlanDisplay linkType="contents" />
+      <ContentPlanDisplay linkType="contents" />
     </Layout>
   );
 };

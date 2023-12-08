@@ -1,14 +1,15 @@
 // src/components/Onboarding.js
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Box, Avatar, Typography,
-  TextField, Button, Grid, FormControlLabel,
-  Checkbox
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/ContentCopy';
-import AccountSettings from './AccountSettings';
-import AccountAPI from './AccountAPI';
+import AccountSettings from '../Accounts/AccountSettings';
+import { doc, setDoc, getFirestore, collection, getDoc, getDocs, query, where } from 'firebase/firestore'; 
+import { AuthContext } from '../../AuthContext'; 
+
+
 
 
 
@@ -16,9 +17,34 @@ const Onboarding = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');  // Nuevo estado para el mensaje de éxito
   const navigate = useNavigate();  // Hook para la navegación
+  const openaikey = "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";
+  const stripe_subscriber = "true";
+  const { currentUser } = useContext(AuthContext); // Obtener currentUser desde AuthContext
 
-  const handleOnSubmitSuccess = () => {
-    navigate('/dashboard'); // Redirige a /dashboard
+
+
+const handleOnSubmitSuccess = async () => {
+  try {
+      if (!currentUser) {
+          console.error('Usuario no autenticado. No se puede actualizar el Business.');
+          return;
+      }
+
+      const businessData = {
+          userId: currentUser.uid,
+          openaikey: openaikey,
+          stripe_subscriber: stripe_subscriber
+      };
+
+      const businessCollection = collection(getFirestore(), 'Business');
+      await setDoc(doc(businessCollection, currentUser.uid), businessData, { merge: true });
+
+      console.log('Datos de Business actualizados exitosamente.');
+      navigate('/dashboard'); // Redirige a /dashboard
+     
+  } catch (error) {
+      console.error('Error al actualizar los datos de Business:', error);
+  }
 };
 
 
@@ -54,7 +80,7 @@ const Onboarding = () => {
           PASO #1 Define los datos de tu cuenta
         </Typography>
       <AccountSettings 
-            //onSubmitSuccess={handleOnSubmitSuccess} 
+            onSubmitSuccess={handleOnSubmitSuccess} 
             submitButtonText="Guardar datos de la cuenta" 
         />
         <Box
@@ -64,30 +90,10 @@ const Onboarding = () => {
      
         }}
       >
-        <Typography component="h2" variant="h5">
-          PASO #2 Agrega el API key de OpenAI
-        </Typography>
-        <Typography component="p">
-          Si no sabes como obtener el API key de Open AI te lo explicamos en este pequeño video:
-        </Typography>
-        {/* Video embebido de YouTube */}
-  <iframe 
-    width="100%" 
-    height="250" 
-    src="https://www.youtube.com/embed/ijyognnxgHo" 
-    title="YouTube video player" 
-    frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen>
-  </iframe>
-        <AccountAPI 
-            onSubmitSuccess={handleOnSubmitSuccess} 
-            submitButtonText="Iniciar con mi contenido" 
-        />
         </Box>
-        <Typography component="p">
-          Este paso es fundamental para poder usar el generador de contenido, si no tienes un API Key de OpenAI no lo podrás usar.
-        </Typography>
+
+      
+        
       <Typography variant="body2" align="center" sx={{ mt: 8 }}>
         Copyright ©{' '}
         <a href="https://mui.com/" variant="inherit">

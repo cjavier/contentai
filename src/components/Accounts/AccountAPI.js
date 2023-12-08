@@ -12,10 +12,16 @@ export default function AccountAPI({ onSubmitSuccess, submitButtonText = "Guarda
     });
 
     const { currentUser } = useContext(AuthContext); // Obtener currentUser desde AuthContext
+    const [shouldDisplay, setShouldDisplay] = useState(true); // Estado para controlar si se debe mostrar el componente
+
 
     useEffect(() => {
         const loadBusinessData = async () => {
-          if (!currentUser) return;
+          if (!currentUser) {
+            setShouldDisplay(false);
+            return;
+          }
+          setShouldDisplay(true);
       
           const db = getFirestore();
           const businessCollection = collection(db, 'Business');
@@ -24,6 +30,11 @@ export default function AccountAPI({ onSubmitSuccess, submitButtonText = "Guarda
       
           if (!querySnapshot.empty) {
             const businessData = querySnapshot.docs[0].data();
+            // Comprobar si stripe_subscriber es true y actualizar el estado en consecuencia
+            if (businessData.stripe_subscriber === "true") {
+              setShouldDisplay(false);
+              return;
+            }
             setFormData({
               openaikey: businessData.openaikey || '',
             });
@@ -31,7 +42,7 @@ export default function AccountAPI({ onSubmitSuccess, submitButtonText = "Guarda
         };
       
         loadBusinessData();
-      }, [currentUser]);
+    }, [currentUser]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -65,6 +76,9 @@ export default function AccountAPI({ onSubmitSuccess, submitButtonText = "Guarda
       }
   };
   
+  if (!shouldDisplay) {
+    return null;
+  }
 
     return (
         <Grid item xs={12}>

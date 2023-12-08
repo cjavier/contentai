@@ -113,6 +113,7 @@ export const CallOpenAIOutline = async (title, keyword, buyerpersona_prompt, use
 
 
 
+
 export const CallOpenAIContent = async (title, keyword, outline, buyerpersona_prompt, content_prompt, userId) => {
   const systemPrompt = `${buyerpersona_prompt}. Los detalles importantes son que ${content_prompt}. No saludes a los lectores, no te despidas de ellos ni firmes los textos, No pongas ningun texto que requiera ser cambiado por el usuario. Dame el resultado en formato HTML.`;
 

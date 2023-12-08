@@ -21,6 +21,7 @@ import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc
 import { AuthContext } from '../../AuthContext';
 import axios from 'axios';
 import Layout from '../Layout/Layout';
+import CategorySelectModal from './CategorySelectModal';
 
 
 
@@ -72,6 +73,23 @@ export default function PublishDisplay() {
   const [cachedKeywordPlans, setCachedKeywordPlans] = useState(null);
   const [contents, setContents] = useState([]);
   const { keywordPlanId } = useParams();
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  const handleCategorySelect = async (category) => {
+    setShowCategoryModal(false);
+    setSelectedCategory(category);
+
+    if (category) {
+      const db = getFirestore();
+      // Loop through all contents and update the category
+      contents.forEach(async (content) => {
+        const contentRef = doc(db, 'contents', content.id);
+        await updateDoc(contentRef, { category: category });
+      });
+      console.log(`Category '${category}' added to all contents.`);
+    }
+  };
 
   const loadContents = async () => {
     if (!currentUser || !keywordPlanId) {
@@ -129,6 +147,7 @@ export default function PublishDisplay() {
       const contentData = contentDoc.data();
       const title = contentData.title;
       const content = contentData.content;
+      const categoryId = contentData.category;
   
       // Configuración para la API de WordPress usando los datos del negocio
       const url = `${businessData.wpWebsiteUrl}wp-json/wp/v2/posts`;
@@ -143,7 +162,8 @@ export default function PublishDisplay() {
       const data = {
         title: title,
         content: content,
-        status: 'publish'
+        status: 'publish',
+        categories: [categoryId] 
       };
   
       // Publicar el contenido en WordPress
@@ -236,7 +256,9 @@ const handleContentDeletion = async (contentId) => {
   }
 };
 
-
+const handleAllContentsCategory = async () => {
+  setShowCategoryModal(true);
+};
 
   
 
@@ -262,12 +284,14 @@ const handleContentDeletion = async (contentId) => {
         <Grid item xs={12} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Plan de Contenido: {keywordPlanId}</Title>
+            <Button onClick={() => handleAllContentsCategory()}>Agregar Categoría a todos los contenidos</Button>
             <Button onClick={() => handleAllContentsPublishing()}>Publicar todos los contenidos</Button>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
                   <TableCell>Número de palabras</TableCell>
+                  <TableCell>Categoría</TableCell>
                   <TableCell>Publicar</TableCell>
                   <TableCell>Eliminar</TableCell>
                 </TableRow>
@@ -277,6 +301,7 @@ const handleContentDeletion = async (contentId) => {
                   <TableRow key={index}>
                     <TableCell>{content.title}</TableCell>
                     <TableCell>{countWordsInHtml(content.content)}</TableCell>
+                    <TableCell>{content.category}</TableCell>
                     <TableCell>
                       {content.published ? (
                         <IconButton color="success">
@@ -309,6 +334,14 @@ const handleContentDeletion = async (contentId) => {
           {backdropMessage}
         </Typography>
       </Backdrop>
+      {/* ... (rest of your component layout) */}
+      <CategorySelectModal
+        open={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onConfirm={handleCategorySelect}
+        title="Seleccionar Categoría"
+        description="Por favor, elige una categoría para los contenidos."
+      />
     </Layout>
   );
   

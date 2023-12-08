@@ -38,11 +38,11 @@ export default function TitlesDisplay() {
     }
   
     const loadKeywordPlans = async () => {
-      const cachedKeywordPlans = sessionStorage.getItem(`keywordPlans_${keywordPlanId}`);
+      /* const cachedKeywordPlans = sessionStorage.getItem(`keywordPlans_${keywordPlanId}`);
       if (cachedKeywordPlans) {
         setKeywordPlans(JSON.parse(cachedKeywordPlans));
         return;
-      }
+      } */
       try {
         const db = getFirestore();
     
@@ -187,6 +187,27 @@ export default function TitlesDisplay() {
     borderRadius: '4px'
   };
   
+  const handleDeleteAllTitles = async (keywordPlanId) => {
+    try {
+      const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
+      if (!keywordPlan) {
+        console.error('Keyword plan not found');
+        return;
+      }
+  
+      for (const keyword of keywordPlan.keywords) {
+        for (const title of keyword.titles) {
+          // Call handleDeleteTitle for each title
+          await handleDeleteTitle(keywordPlanId, keyword.id, title.id);
+        }
+      }
+  
+      console.log('All titles have been deleted.');
+    } catch (error) {
+      console.error('Error deleting all titles:', error);
+    }
+  };
+  
   
 
   return (
@@ -196,6 +217,14 @@ export default function TitlesDisplay() {
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Keyword Plan: {keywordPlan.id}</Title>
+            {/* Button to delete all titles in the keyword plan */}
+            <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => handleDeleteAllTitles(keywordPlan.id)}
+              >
+                Eliminar Todos los Títulos del Plan
+              </Button>
             <Table size="small">
               <TableHead>
                 <TableRow>

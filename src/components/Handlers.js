@@ -1,5 +1,6 @@
 import { getFirestore, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { CallOpenAIOutline } from './OpenAI';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 
 export const handleOutlineCreation = async (keywordPlanId, keywordId, titleId, currentUser, setKeywordPlans, keywordPlans) => {
@@ -57,7 +58,7 @@ export const handleContentCreation = async (keywordPlanId, keywordId, titleId, c
       const userId = currentUser.uid; // Asegúrate de que currentUser y uid estén definidos correctamente
   
       // 1. Realizar la solicitud al servidor
-      const response = await fetch(`https://contentai-backend.onrender.com/createcontent?userId=${userId}&keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}`, {
+      const response = await fetch(`${API_URL}/createcontent?userId=${userId}&keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}`, {
         method: 'POST',
       });
   
@@ -80,7 +81,7 @@ export const handleAllContentsCreation = async (keywordPlanId, currentUser) => {
   try {
 
     // Hacer la llamada al servidor para crear todos los contenidos
-    const response = await fetch(`https://contentai-backend.onrender.com/createallcontent?userId=${currentUser.uid}&keywordPlanId=${keywordPlanId}`, {
+    const response = await fetch(`${API_URL}/createallcontent?userId=${currentUser.uid}&keywordPlanId=${keywordPlanId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -116,57 +116,74 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
   
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
-    await handleOutlineCreationHandler(keywordPlanId, keywordId, titleId, currentUser, setKeywordPlans, keywordPlans);
+    try {
+      const userId = currentUser.uid; // Assuming currentUser has the uid property
+      const response = await fetch(`http://localhost:8080/createalloutline?keywordPlanId=${keywordPlanId}&userId=${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+        // Additional headers or configurations, if needed
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      console.log('Outline created successfully');
+      // Optionally, update your state or UI based on the response
+    } catch (error) {
+      console.error('Error creating outline:', error);
+      // Handle error, update UI accordingly
+    }
   };
+  
   
   const handleContentCreation = async (keywordPlanId, keywordId, titleId) => {
     await handleContentCreationHandler(keywordPlanId, keywordId, titleId, currentUser);
   };
 
   const handleAllContentsCreation = async (keywordPlanId) => {
-    setIsLoading(true);
-    setBackdropMessage('Comenzando con la producción de contenido');
+    try {
+      setIsLoading(true);
+      setBackdropMessage('Marcando la creación de todos los Contenidos...');
   
-    const result = await handleAllContentsCreationHandler(keywordPlanId, currentUser);
+      const db = getFirestore();
+      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
+      await updateDoc(keywordPlanRef, {
+        All_Content_Creation: true
+      });
   
-    if (result.status === 'ok') {
-      setBackdropMessage('Tu Contenido esta siendo producido, puedes cerrar la ventana');
-      setTimeout(() => {
-        setBackdropMessage('');
-        setIsLoading(false);
-      }, 5000);
-    } else {
-      setBackdropMessage(result.message);
+      console.log('All_Content_Creation marcado como True');
       setIsLoading(false);
+      setBackdropMessage('');
+    } catch (error) {
+      console.error('Error al marcar All_Content_Creation:', error);
+      setIsLoading(false);
+      setBackdropMessage('Error al marcar All_Content_Creation');
     }
   };
   
-const handleAllOutlinesCreation = async (keywordPlanId) => {
-  try {
-    setIsLoading(true);
-    setBackdropMessage('Creando todos los Outlines...');
-    const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-    let completed = 0;
-    const total = keywordPlan.keywords.reduce((acc, keyword) => acc + keyword.titles.length, 0);
-    setTotalOutlines(total);
-    for (const keyword of keywordPlan.keywords) {
-      for (const title of keyword.titles) {
-        if (!title.outline) {
-          await handleOutlineCreation(keywordPlanId, keyword.id, title.id);
-          completed++;
-          setCompletedOutlines(completed);
-          setBackdropMessage(`Creando Outline ${completed} de ${total}`);
-        }
-      }
+  const handleAllOutlinesCreation = async (keywordPlanId) => {
+    try {
+      setIsLoading(true);
+      setBackdropMessage('Marcando la creación de todos los Outlines...');
+  
+      const db = getFirestore();
+      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
+      await updateDoc(keywordPlanRef, {
+        All_Outline_Creation: true
+      });
+  
+      console.log('All_Outline_Creation marcado como True');
+      setIsLoading(false);
+      setBackdropMessage('');
+    } catch (error) {
+      console.error('Error al marcar All_Outline_Creation:', error);
+      setIsLoading(false);
+      setBackdropMessage('Error al marcar All_Outline_Creation');
     }
-    console.log('Outlines creados exitosamente para todos los títulos que lo requerían.');
-  } catch (error) {
-    console.error('Error al crear outlines para todos los títulos:', error);
-  } finally {
-    setIsLoading(false);
-    setBackdropMessage('');
-  }
-};
+  };
 
 const handleAllOutlinesDelete = async (keywordPlanId) => {
   try {

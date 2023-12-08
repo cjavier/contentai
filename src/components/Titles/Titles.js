@@ -1,12 +1,12 @@
 import React from 'react';
-import KeywordPlanDisplay from '../Keywords/KeywordPlanDisplay';
+import TitlePlanDisplay from './TitlePlanDisplay';
 import Layout from '../Layout/Layout';
 
 
 const Titles = () => {
   return (
     <Layout>
-      <KeywordPlanDisplay linkType="titles" />
+      <TitlePlanDisplay linkType="titles" />
     </Layout>
   );
 };
