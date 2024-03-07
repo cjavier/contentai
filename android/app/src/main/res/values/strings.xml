@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">contentai</string>
+    <string name="title_activity_main">contentai</string>
+    <string name="package_name">com.improvitz.contentai</string>
+    <string name="custom_url_scheme">com.improvitz.contentai</string>
+</resources>

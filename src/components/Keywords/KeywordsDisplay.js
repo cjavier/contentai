@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -50,6 +51,22 @@ export default function KeywordsDisplay() {
   const [editingKeywordValue, setEditingKeywordValue] = useState('');
   const [keywordsCache, setKeywordsCache] = useState({});
 const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
+const [isBuyerPersonaDialogVisible, setIsBuyerPersonaDialogVisible] = useState(false);
+const [currentKeywordPlanForBP, setCurrentKeywordPlanForBP] = useState(null);
+
+const memoizedBuyerPersonas = useMemo(() => buyerPersonas, [buyerPersonas]);
+
+const memoizedKeywordPlans = useMemo(() => {
+  return keywordPlans.map(keywordPlan => ({
+    ...keywordPlan,
+    keywords: keywordPlan.keywords.map(keyword => ({
+      ...keyword,
+      // Assuming titles is already an array of title objects
+      titles: keyword.titles,
+    })),
+  }));
+}, [keywordPlans]);
+
 
 
   const handleEditKeywordStart = (keywordId, keywordValue) => {
@@ -71,6 +88,10 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
     setIsAddKeywordModalVisible(false);
   };
 
+  const openBuyerPersonaDialog = (keywordPlanId) => {
+    setCurrentKeywordPlanForBP(keywordPlanId);
+    setIsBuyerPersonaDialogVisible(true);
+  };  
   
 
   useEffect(() => {
@@ -190,6 +211,28 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
       console.error('Error al agregar keywords al KeywordPlan:', error);
     }
   };
+
+  const saveBuyerPersonaToKeywordPlan = async () => {
+    if (!currentKeywordPlanForBP || !selectedBuyerPersona) return;
+  
+    const db = getFirestore();
+    const keywordPlanRef = doc(db, 'keywordsplans', currentKeywordPlanForBP);
+  
+    try {
+      await updateDoc(keywordPlanRef, {
+        buyerpersonaid: selectedBuyerPersona
+      });
+  
+      console.log('Buyer Persona updated successfully.');
+     
+  
+      setIsBuyerPersonaDialogVisible(false); // Close the dialog
+    } catch (error) {
+      console.error('Error updating Buyer Persona:', error);
+      // Handle error (e.g., show a message to the user)
+    }
+  };
+  
   
   const handleDeleteKeywordPlan = async (keywordPlanId) => {
     try {
@@ -296,6 +339,46 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
     } 
   };
 
+  const handleSingleTitleCreation = async (keywordPlanId, keywordId) => {
+    const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
+  
+  // Check if a Buyer Persona is assigned to the keyword plan
+  if (!keywordPlan.buyerpersonaid) {
+    // If no Buyer Persona is assigned, alert the user and stop the function
+    alert("Necesitas agregar un Buyer Persona antes de crear títulos.");
+    return;
+  }
+    try {
+      setIsLoading(true); // Show loading indicator
+      setBackdropMessage('Creando los títulos para la keyword...'); // Optional: Show a backdrop message
+      
+      // Find the buyer persona (if any) selected for title creation
+      const selectedBP = buyerPersonas.find(bp => bp.id === selectedBuyerPersona);
+      const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
+      
+      const db = getFirestore();
+      const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
+      
+      // Assuming CallOpenAITitle returns an array of title ideas
+      const titleIdeas = await CallOpenAITitle(editingKeywordValue, titlePrompt, currentUser.uid);
+      
+      // Save each generated title in Firestore
+      const titlesRef = collection(keywordRef, 'titles');
+      for (const titleIdea of titleIdeas) {
+        await addDoc(titlesRef, { title: titleIdea });
+      }
+      
+      console.log('Title(s) created successfully.');
+      setIsLoading(false); // Hide loading indicator
+      setBackdropMessage(''); // Clear any backdrop message
+    } catch (error) {
+      console.error('Error creating title:', error);
+      setIsLoading(false); // Ensure loading indicator is hidden even on error
+      setBackdropMessage('Error creating title'); // Optionally show an error message
+    }
+  };
+  
+
   const handleSaveEditedKeyword = async (keywordPlanId, keywordId) => {
     try {
       const db = getFirestore();
@@ -366,6 +449,33 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
         </DialogActions>
       </Dialog>
 
+      {/* Dialog for selecting a Buyer Persona for a Keyword Plan */}
+        <Dialog open={isBuyerPersonaDialogVisible} onClose={() => setIsBuyerPersonaDialogVisible(false)}>
+          <DialogTitle>Select Buyer Persona</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Please select the Buyer Persona you wish to associate with this Keyword Plan.
+            </DialogContentText>
+            <Select
+              fullWidth
+              value={selectedBuyerPersona}
+              onChange={(e) => setSelectedBuyerPersona(e.target.value)}
+            >
+              {buyerPersonas.map(bp => (
+                <MenuItem key={bp.id} value={bp.id}>{bp.name}</MenuItem>
+              ))}
+            </Select>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsBuyerPersonaDialogVisible(false)} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={saveBuyerPersonaToKeywordPlan} color="primary">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
        {/* Diálogo para agregar keywords */}
        <Dialog open={isAddKeywordModalVisible} onClose={handleCloseAddKeywordModal}>
         <DialogTitle>Agregar Keywords al Plan</DialogTitle>
@@ -397,11 +507,31 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Title>Keyword Plan: {keywordPlan.planName}</Title>
+            <Typography component="div" variant="subtitle1">
+        Buyer Persona:  
+        {keywordPlan.buyerpersonaid ? (
+          // Assuming you can map the ID to a name; you might need to adjust based on your data structure
+          buyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid)?.name || 'Unknown'
+        ) : (
+          <React.Fragment>
+            Unknown
+            <Button 
+              onClick={() => openBuyerPersonaDialog(keywordPlan.id)}
+              color="primary"
+              size="small"
+              style={{marginLeft: 8}}
+            >
+              Add Buyer Persona
+            </Button>
+          </React.Fragment>
+        )}
+      </Typography>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Keyword</TableCell>
                   <TableCell sx={{ textAlign: 'right' }}>Numero de Tìtulos</TableCell>
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Crear Títulos</TableCell> {/* Ajuste aquí */}
                   <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell> {/* Ajuste aquí */}
                   <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell> {/* Ajuste aquí */}
                 </TableRow>
@@ -419,7 +549,17 @@ const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
           keyword.keyword
         )}
       </TableCell>
+      
       <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
+      <TableCell sx={{ textAlign: 'right' }}>
+            <IconButton
+              aria-label="create"
+              color="primary"
+              onClick={() => handleSingleTitleCreation(keywordPlan.id, keyword.id)}
+            >
+              <LightbulbIcon />
+            </IconButton>
+          </TableCell>
       <TableCell sx={{ textAlign: 'right' }}>
         {editingKeywordId === keyword.id ? (
           <IconButton
