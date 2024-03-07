@@ -299,7 +299,7 @@ const memoizedKeywordPlans = useMemo(() => {
       setIsLoading(true); // Mostrar el CircularProgress
       setBackdropMessage('Creando títulos...'); // Mensaje mientras se crean los títulos
       const db = getFirestore();
-      const selectedBP = buyerPersonas.find(bp => bp.id === selectedBuyerPersona);
+      const selectedBP = memoizedBuyerPersonas.find(bp => bp.id === selectedBuyerPersona);
       const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
   
       // Si hay un buyer persona seleccionado, actualiza el keywordPlan con el buyerpersonaid
@@ -353,7 +353,7 @@ const memoizedKeywordPlans = useMemo(() => {
       setBackdropMessage('Creando los títulos para la keyword...'); // Optional: Show a backdrop message
       
       // Find the buyer persona (if any) selected for title creation
-      const selectedBP = buyerPersonas.find(bp => bp.id === selectedBuyerPersona);
+      const selectedBP = memoizedBuyerPersonas.find(bp => bp.id === selectedBuyerPersona);
       const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
       
       const db = getFirestore();
@@ -431,7 +431,7 @@ const memoizedKeywordPlans = useMemo(() => {
             value={selectedBuyerPersona}
             onChange={(e) => setSelectedBuyerPersona(e.target.value)}
           >
-            {buyerPersonas.map(bp => (
+            {memoizedBuyerPersonas.map(bp => (
               <MenuItem key={bp.id} value={bp.id}>{bp.name}</MenuItem>
             ))}
           </Select>
@@ -461,7 +461,7 @@ const memoizedKeywordPlans = useMemo(() => {
               value={selectedBuyerPersona}
               onChange={(e) => setSelectedBuyerPersona(e.target.value)}
             >
-              {buyerPersonas.map(bp => (
+              {memoizedBuyerPersonas.map(bp => (
                 <MenuItem key={bp.id} value={bp.id}>{bp.name}</MenuItem>
               ))}
             </Select>
@@ -510,10 +510,9 @@ const memoizedKeywordPlans = useMemo(() => {
             <Typography component="div" variant="subtitle1">
         Buyer Persona:  
         {keywordPlan.buyerpersonaid ? (
-          // Assuming you can map the ID to a name; you might need to adjust based on your data structure
-          buyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid)?.name || 'Unknown'
+          memoizedBuyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid)?.name || 'Unknown'
         ) : (
-          <React.Fragment>
+          <>
             Unknown
             <Button 
               onClick={() => openBuyerPersonaDialog(keywordPlan.id)}
@@ -523,7 +522,7 @@ const memoizedKeywordPlans = useMemo(() => {
             >
               Add Buyer Persona
             </Button>
-          </React.Fragment>
+          </>
         )}
       </Typography>
             <Table size="small">
@@ -549,7 +548,6 @@ const memoizedKeywordPlans = useMemo(() => {
           keyword.keyword
         )}
       </TableCell>
-      
       <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
       <TableCell sx={{ textAlign: 'right' }}>
             <IconButton
@@ -606,7 +604,6 @@ const memoizedKeywordPlans = useMemo(() => {
 </Backdrop>
     </Grid>
     </Layout>
-    
 );
 
 }

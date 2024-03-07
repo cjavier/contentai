@@ -2,6 +2,29 @@ import { collection, getFirestore, addDoc, query, where, getDocs, serverTimestam
 
 
 //const apiKey = "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"; // Reemplaza "TU_API_KEY_AQUI" con tu clave API real
+const getOpenAIConfig = async (userId) => {
+  const db = getFirestore();
+  const businessCollection = collection(db, 'Business');
+  const q = query(businessCollection, where('userId', '==', userId));
+
+  try {
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+          const businessData = querySnapshot.docs[0].data();
+          return {
+              openaiKey: businessData.openaikey,
+              openaiModel: businessData.openaiModel // Retrieve the OpenAI model preference
+          };
+      } else {
+          console.error('No se encontró un documento con ese userId.');
+          return null;
+      }
+  } catch (error) {
+      console.error('Error al obtener la configuración de OpenAI:', error);
+      return null;
+  }
+};
+
 
 const getOpenAIKey = async (userId) => {
     const db = getFirestore();
@@ -167,42 +190,48 @@ export const CallOpenAIContent = async (title, keyword, outline, buyerpersona_pr
 
 
 export const CallOpenAITitle = async (keyword, titlePrompt, userId) => {
-    const systemPrompt = `You will be asked to create titles for some blog posts ${titlePrompt}`;
-    const userPrompt = `Dame tres ideas de un título para blog con la keyword: ${keyword}`;
-    const apiKey = await getOpenAIKey(userId);
-    const url = "https://api.openai.com/v1/chat/completions";
-    const options = {
+  const systemPrompt = `You will be asked to create titles for some blog posts ${titlePrompt}`;
+  const userPrompt = `Dame tres ideas de un título para blog con la keyword: ${keyword}`;
+  
+  // Use getOpenAIConfig to retrieve both the API key and the model preference
+  const { openaiKey, openaiModel } = await getOpenAIConfig(userId);
+  if (!openaiKey || !openaiModel) {
+      console.error('API Key or model not found.');
+      return [];
+  }
+
+  const url = "https://api.openai.com/v1/chat/completions";
+  const options = {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+          "Authorization": `Bearer ${openaiKey}`,
+          "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "gpt-3.5-turbo",
-        "messages": [
-          {"role": "system", "content": systemPrompt},
-          {"role": "user", "content": userPrompt}
-        ],
-        "temperature": 0.3
+          "model": openaiModel, // Use the dynamically retrieved model
+          "messages": [
+              {"role": "system", "content": systemPrompt},
+              {"role": "user", "content": userPrompt}
+          ],
+          "temperature": 0.3
       })
-    };
-  
-    try {
+  };
+
+  try {
       const response = await fetch(url, options);
       const data = await response.json();
-  
+
       const titleIdea = data.choices[0].message.content;
       console.log(data.usage);
       await saveTokenUsage(data.usage, userId, "title");
-
 
       // Dividir la respuesta en títulos individuales usando una expresión regular
       const matchedTitles = titleIdea.match(/\d+\.\s+"([^"]+)"/g);
       const titles = matchedTitles ? matchedTitles.map(title => title.replace(/\d+\.\s+"/, "").replace(/"$/, "").trim()) : [];
 
       return titles;
-    } catch (error) {
+  } catch (error) {
       console.error('Error al llamar a OpenAI:', error);
       return [];
-    }
+  }
 };

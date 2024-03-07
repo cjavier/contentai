@@ -6,6 +6,7 @@ import Logout from './Logout';
 import AccountSettings from './AccountSettings';
 import AccountAPI from './AccountAPI';
 import AccountWordpress from './AccountWordpress';
+import TitleModel from './TitleModel';
 import { AuthContext } from '../../AuthContext'; 
 
 
@@ -23,6 +24,9 @@ return (
           </Box>
           <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
           <AccountAPI />
+          </Box>
+          <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
+          <TitleModel />
           </Box>
           <Box mt={2}> 
           <AccountWordpress />
