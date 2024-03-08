@@ -341,32 +341,33 @@ const memoizedKeywordPlans = useMemo(() => {
 
   const handleSingleTitleCreation = async (keywordPlanId, keywordId) => {
     const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-  
-  // Check if a Buyer Persona is assigned to the keyword plan
-  if (!keywordPlan.buyerpersonaid) {
-    // If no Buyer Persona is assigned, alert the user and stop the function
+    if (!keywordPlan.buyerpersonaid) {
     alert("Necesitas agregar un Buyer Persona antes de crear títulos.");
     return;
   }
+  const keyword = keywordPlan.keywords.find(k => k.id === keywordId);
+  console.log(keyword);
     try {
-      setIsLoading(true); // Show loading indicator
+      setIsLoading(true); 
       setBackdropMessage('Creando los títulos para la keyword...'); // Optional: Show a backdrop message
       
       // Find the buyer persona (if any) selected for title creation
-      const selectedBP = memoizedBuyerPersonas.find(bp => bp.id === selectedBuyerPersona);
+      const selectedBP = buyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid);
       const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
+      console.log("obteniendo el prompt para el titl: ", titlePrompt);
       
       const db = getFirestore();
       const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
       
       // Assuming CallOpenAITitle returns an array of title ideas
-      const titleIdeas = await CallOpenAITitle(editingKeywordValue, titlePrompt, currentUser.uid);
-      
+      console.log("keyword: ", keyword.keyword, "buyerpersona: ", selectedBP.name, "userId: ", currentUser.uid);
+      const titleIdeas = await CallOpenAITitle(keyword.keyword, titlePrompt, currentUser.uid);
+      console.log("titleIdeas: ", titleIdeas);
       // Save each generated title in Firestore
-      const titlesRef = collection(keywordRef, 'titles');
-      for (const titleIdea of titleIdeas) {
-        await addDoc(titlesRef, { title: titleIdea });
-      }
+      const titlesRef = collection(doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId), 'titles');
+        for (const titleIdea of titleIdeas) {
+          await addDoc(titlesRef, { title: titleIdea });
+        } 
       
       console.log('Title(s) created successfully.');
       setIsLoading(false); // Hide loading indicator

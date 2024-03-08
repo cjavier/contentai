@@ -117,8 +117,9 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
   
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
     try {
-      const userId = currentUser.uid; // Assuming currentUser has the uid property
-      const response = await fetch(`http://localhost:8080/createalloutline?keywordPlanId=${keywordPlanId}&userId=${userId}`, {
+      const userId = currentUser.uid;
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/createalloutline?keywordPlanId=${keywordPlanId}&userId=${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
