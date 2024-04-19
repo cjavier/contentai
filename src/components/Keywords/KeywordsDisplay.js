@@ -354,7 +354,7 @@ const memoizedKeywordPlans = useMemo(() => {
       // Find the buyer persona (if any) selected for title creation
       const selectedBP = buyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid);
       const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
-      console.log("obteniendo el prompt para el titl: ", titlePrompt);
+      console.log("obteniendo el prompt para el title: ", titlePrompt);
       
       const db = getFirestore();
       const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
