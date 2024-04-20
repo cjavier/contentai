@@ -116,27 +116,8 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
   
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
-    try {
-      const userId = currentUser.uid;
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await fetch(`${apiUrl}/createalloutline?keywordPlanId=${keywordPlanId}&userId=${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-        // Additional headers or configurations, if needed
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      console.log('Outline created successfully');
-      // Optionally, update your state or UI based on the response
-    } catch (error) {
-      console.error('Error creating outline:', error);
-      // Handle error, update UI accordingly
-    }
+    const userId = currentUser.uid;
+    await handleOutlineCreationHandler(keywordPlanId, keywordId, titleId, userId);
   };
   
   
@@ -273,7 +254,7 @@ const handleAllOutlinesDelete = async (keywordPlanId) => {
       {keywordPlans.map((keywordPlan) => (
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Plan de Contenido: {keywordPlan.id}</Title>
+            <Title>Plan de Contenido: {keywordPlan.planName}</Title>
             <Button onClick={() => handleAllOutlinesCreation(keywordPlan.id)}>Crear todos los Outlines</Button>
             <Button onClick={() => handleAllContentsCreation(keywordPlan.id)}>Crear todos los Contenidos</Button>
             <Table size="small">

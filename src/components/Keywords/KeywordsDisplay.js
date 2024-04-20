@@ -526,39 +526,39 @@ const memoizedKeywordPlans = useMemo(() => {
           </>
         )}
       </Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Keyword</TableCell>
-                  <TableCell sx={{ textAlign: 'right' }}>Numero de Tìtulos</TableCell>
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Crear Títulos</TableCell> {/* Ajuste aquí */}
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell> {/* Ajuste aquí */}
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell> {/* Ajuste aquí */}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-  {keywordPlan.keywords.map((keyword, index) => (
-    <TableRow key={index}>
-      <TableCell>
-        {editingKeywordId === keyword.id ? (
-          <TextField
-            value={editingKeywordValue}
-            onChange={(e) => setEditingKeywordValue(e.target.value)}
-          />
-        ) : (
-          keyword.keyword
-        )}
-      </TableCell>
-      <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
-      <TableCell sx={{ textAlign: 'right' }}>
-            <IconButton
-              aria-label="create"
-              color="primary"
-              onClick={() => handleSingleTitleCreation(keywordPlan.id, keyword.id)}
-            >
-              <LightbulbIcon />
-            </IconButton>
-          </TableCell>
+      <Table size="small">
+  <TableHead>
+    <TableRow>
+      <TableCell>Keyword</TableCell>
+      <TableCell sx={{ textAlign: 'right' }}>Numero de Títulos</TableCell>
+      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Crear Títulos</TableCell>
+      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell>
+      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell>
+    </TableRow>
+  </TableHead>
+  <TableBody>
+    {keywordPlan.keywords.map((keyword, index) => (
+      <TableRow key={index}>
+        <TableCell>
+          {editingKeywordId === keyword.id ? (
+            <TextField
+              value={editingKeywordValue}
+              onChange={(e) => setEditingKeywordValue(e.target.value)}
+            />
+          ) : (
+            keyword.keyword
+          )}
+        </TableCell>
+        <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
+        <TableCell sx={{ textAlign: 'right' }}>
+          <IconButton
+            aria-label="create"
+            color="primary"
+            onClick={() => handleSingleTitleCreation(keywordPlan.id, keyword.id)}
+          >
+            <LightbulbIcon />
+          </IconButton>
+        </TableCell>
       <TableCell sx={{ textAlign: 'right' }}>
         {editingKeywordId === keyword.id ? (
           <IconButton

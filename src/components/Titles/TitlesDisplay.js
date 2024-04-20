@@ -216,7 +216,7 @@ export default function TitlesDisplay() {
       {keywordPlans.map((keywordPlan) => (
         <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Keyword Plan: {keywordPlan.id}</Title>
+            <Title>Keyword Plan: {keywordPlan.planName}</Title>
             {/* Button to delete all titles in the keyword plan */}
             <Button
                 variant="contained"

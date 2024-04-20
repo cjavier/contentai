@@ -3,55 +3,29 @@ import { CallOpenAIOutline } from './OpenAI';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 
-export const handleOutlineCreation = async (keywordPlanId, keywordId, titleId, currentUser, setKeywordPlans, keywordPlans) => {
-    try {
-      const db = getFirestore();
-  
-      // 1. Obtener la keyword, el título y el buyerpersonaid
-      const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-      const keyword = keywordPlan.keywords.find(k => k.id === keywordId);
-      const titleObj = keyword.titles.find(t => t.id === titleId);
-      const buyerPersonaId = keywordPlan.buyerpersonaid;
-  
-      // 2. Obtener el buyerpersona_prompt usando el buyerPersonaId
-      const buyerPersonaDoc = await getDoc(doc(db, 'buyerpersonas', buyerPersonaId)); // Asumiendo que la colección se llama 'buyerPersonas'
-      const buyerpersona_prompt = buyerPersonaDoc.data().buyerpersona_prompt;
-  
-      // 3. Llamar a la función CallOpenAIOutline con el título, la keyword y el buyerpersona_prompt
-      const outline = await CallOpenAIOutline(titleObj.title, keyword.keyword, buyerpersona_prompt, currentUser.uid);
-  
-      // 4. Recibir el outline y guardarlo en la propiedad outline del título correspondiente en Firestore
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        outline: outline
-      });
-  
-      console.log('Outline creado exitosamente.');
-  
-      // Actualizar el estado local para reflejar el cambio
-      setKeywordPlans(prevKeywordPlans => {
-        return prevKeywordPlans.map(kp => {
-          if (kp.id === keywordPlanId) {
-            kp.keywords = kp.keywords.map(k => {
-              if (k.id === keywordId) {
-                k.titles = k.titles.map(t => {
-                  if (t.id === titleId) {
-                    t.outline = outline;
-                  }
-                  return t;
-                });
-              }
-              return k;
-            });
-          }
-          return kp;
-        });
-      });
-  
-    } catch (error) {
-      console.error('Error al crear el outline:', error);
+export const handleOutlineCreation = async (keywordPlanId, keywordId, titleId, userId) => {
+  try {
+    const apiUrl = process.env.REACT_APP_API_URL;
+
+    const response = await fetch(`${apiUrl}/createoutline?keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}&userId=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+      // Additional headers or configurations, if needed
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
-  };
+
+    console.log('Outline created successfully');
+    // Optionally, update your state or UI based on the response
+  } catch (error) {
+    console.error('Error creating outline:', error);
+    // Handle error, update UI accordingly
+  }
+};
 
 export const handleContentCreation = async (keywordPlanId, keywordId, titleId, currentUser) => {
     try {

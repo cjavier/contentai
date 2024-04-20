@@ -33,15 +33,16 @@ export default function BuyerPersonasDisplay() {
   const handleOpenModal = (buyerPersona, type) => {
     setEditingBuyerPersonaId(buyerPersona.id);
     setEditingBuyerPersona(buyerPersona);
-    setPromptType(type);  // Establecer el tipo de prompt (content o buyer persona)
+    setPromptType(type);  // Establecer el tipo de prompt
     if (type === 'content') {
-      setContentPrompt(buyerPersona.content_prompt);
-    } else {
-      setContentPrompt(buyerPersona.buyerpersona_prompt);
+        setContentPrompt(buyerPersona.content_prompt);
+    } else if (type === 'buyerpersona') {
+        setContentPrompt(buyerPersona.buyerpersona_prompt);
+    } else if (type === 'title') {
+        setContentPrompt(buyerPersona.title_prompt);
     }
     setModalOpen(true);
-  };
-  
+};
 
   const handleCloseModal = () => {
     setModalOpen(false);
@@ -49,32 +50,46 @@ export default function BuyerPersonasDisplay() {
 
   const handleSaveContentPrompt = async () => {
     if (editingBuyerPersonaId) {
-      try {
-        const updatedContent = promptType === 'content' 
-          ? { ...editingBuyerPersona, content_prompt: contentPrompt }
-          : { ...editingBuyerPersona, buyerpersona_prompt: contentPrompt };
-        const db = getFirestore();
-        const buyerPersonaRef = doc(db, 'buyerpersonas', editingBuyerPersonaId);
-        await updateDoc(buyerPersonaRef, updatedContent);
-  
-        // Actualizar el estado local
-        setBuyerPersonas((prevBuyerPersonas) =>
-          prevBuyerPersonas.map((buyerPersona) =>
-            buyerPersona.id === editingBuyerPersonaId ? { ...buyerPersona, ...updatedContent } : buyerPersona
-          )
-        );
-  
-        // Resetear el estado de edición y cerrar el modal
-        setEditingBuyerPersonaId(null);
-        setEditingBuyerPersona({});
-        handleCloseModal();
-      } catch (error) {
-        console.error('Error al actualizar el prompt:', error);
-      }
+        try {
+            let updatedContent = {};
+            switch (promptType) {
+                case 'content':
+                    updatedContent = { content_prompt: contentPrompt };
+                    break;
+                case 'buyerpersona':
+                    updatedContent = { buyerpersona_prompt: contentPrompt };
+                    break;
+                case 'title':
+                    updatedContent = { title_prompt: contentPrompt };
+                    break;
+                default:
+                    console.error('Tipo de prompt desconocido:', promptType);
+                    return;
+            }
+
+            const db = getFirestore();
+            const buyerPersonaRef = doc(db, 'buyerpersonas', editingBuyerPersonaId);
+            await updateDoc(buyerPersonaRef, updatedContent);
+
+            // Actualizar el estado local
+            setBuyerPersonas((prevBuyerPersonas) =>
+                prevBuyerPersonas.map((buyerPersona) =>
+                    buyerPersona.id === editingBuyerPersonaId ? { ...buyerPersona, ...updatedContent } : buyerPersona
+                )
+            );
+
+            // Resetear el estado de edición y cerrar el modal
+            setEditingBuyerPersonaId(null);
+            setEditingBuyerPersona({});
+            handleCloseModal();
+        } catch (error) {
+            console.error('Error al actualizar el prompt:', error);
+        }
     } else {
-      console.error('No hay un Buyer Persona seleccionado para editar.');
+        console.error('No hay un Buyer Persona seleccionado para editar.');
     }
-  };
+};
+
   
 
   useEffect(() => {
@@ -263,8 +278,9 @@ export default function BuyerPersonasDisplay() {
                             </IconButton>
                         )}
                     </div>
-                    <Button variant="outlined" onClick={() => handleOpenModal(buyerPersona)}>Cambiar el Content Prompt</Button>
-                        <Button variant="outlined" onClick={() => handleOpenModal(buyerPersona, 'buyerpersona')} sx={{ mt: 1 }}>Cambiar el Buyer Persona Prompt</Button>
+                    <Button variant="outlined" onClick={() => handleOpenModal(buyerPersona, 'content')}>Cambiar el Content Prompt</Button>
+                    <Button variant="outlined" onClick={() => handleOpenModal(buyerPersona, 'buyerpersona')} sx={{ mt: 1 }}>Cambiar el Buyer Persona Prompt</Button>
+                    <Button variant="outlined" onClick={() => handleOpenModal(buyerPersona, 'title')} sx={{ mt: 1 }}>Cambiar el Prompt de Títulos</Button>
                 </Paper>
             </Grid>
         ))}
@@ -275,9 +291,12 @@ export default function BuyerPersonasDisplay() {
             aria-describedby="modal-modal-description"
         >
             <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', border: '2px solid #000', boxShadow: 24, p: 4 }}>
-                <Typography id="modal-modal-title" variant="h6" component="h2">
-                    {promptType === 'content' ? 'Cambiar Prompt de Contenido' : 'Cambiar Prompt de Buyer Persona'}
-                </Typography>
+            <Typography id="modal-modal-title" variant="h6" component="h2">
+    {promptType === 'content' ? 'Cambiar Prompt de Contenido' : 
+     promptType === 'buyerpersona' ? 'Cambiar Prompt de Buyer Persona' :
+     'Cambiar Prompt de Títulos'}
+</Typography>
+
                 <TextField
                     multiline
                     fullWidth
