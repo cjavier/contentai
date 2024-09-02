@@ -22,15 +22,7 @@ return (
       <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
           <AccountSettings />
           </Box>
-          <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
-          <AccountAPI />
-          </Box>
-          <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
-          <TitleModel />
-          </Box>
-          <Box mt={2}> 
-          <AccountWordpress />
-          </Box>
+          
           <Box mt={2}> {/* Esto añade un margen superior de 2 unidades */}
               <Logout />
           </Box>

@@ -91,11 +91,11 @@ export default function TitleModel({ onSubmitSuccess, submitButtonText = "Guarda
                     fullWidth
                     margin="normal"
                 >
-                    <MenuItem value="gpt-3.5-turbo-0125">gpt-3.5-turbo-0125</MenuItem>
                     <MenuItem value="gpt-3.5-turbo">gpt-3.5-turbo</MenuItem>
-                    <MenuItem value="gpt-4-0125-preview">gpt-4-0125-preview</MenuItem>
-                    <MenuItem value="gpt-4-turbo-preview">gpt-4-turbo-preview</MenuItem>
+                    <MenuItem value="gpt-4-turbo-preview">gpt-4-vision-preview</MenuItem>
+                    <MenuItem value="gpt-4">gpt-4-turbo</MenuItem>
                     <MenuItem value="gpt-4">gpt-4</MenuItem>
+                    <MenuItem value="gpt-4">gpt-4o</MenuItem>
                 </Select>
                 <Button variant="contained" onClick={handleSubmit} sx={{ mt: 2 }}>
                     {submitButtonText}

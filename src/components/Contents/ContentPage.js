@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../../AuthContext';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -8,9 +7,10 @@ import Grid from '@mui/material/Grid';
 import Layout from '../Layout/Layout';
 import Button from '@mui/material/Button';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
+import axios from 'axios';
 
 export default function ContentPage() {
-  const { keywordPlanId, keywordId, titleId } = useParams();
+  const { contentId } = useParams();  
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const { currentUser } = useContext(AuthContext);
@@ -23,31 +23,22 @@ export default function ContentPage() {
 
     const fetchContent = async () => {
       try {
-        const db = getFirestore();
-        const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-        const titleDoc = await getDoc(titleRef);
-
-        if (titleDoc.exists()) {
-          setContent(titleDoc.data().content || '');
-        } else {
-          console.error('El título no existe.');
-        }
+        // Obtener el contenido directamente usando el contentId
+        const contentResponse = await axios.get(`http://localhost:8000/contents/${contentId}`);
+        setContent(contentResponse.data.content.content || '');
       } catch (error) {
         console.error('Error al cargar el contenido:', error);
       }
     };
 
     fetchContent();
-  }, [currentUser, keywordPlanId, keywordId, titleId]);
+  }, [currentUser, contentId]);
 
   const handleDeleteContent = async () => {
     try {
-      const db = getFirestore();
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        content: null
-      });
-      setContent('');
+      // Eliminar el contenido directamente
+      await axios.delete(`http://localhost:8000/contents/${contentId}`);
+      setContent('');  // Limpiar el estado después de eliminar el contenido
     } catch (error) {
       console.error('Error al eliminar el contenido:', error);
     }
@@ -55,12 +46,11 @@ export default function ContentPage() {
 
   const handleSaveEdit = async () => {
     try {
-      const db = getFirestore();
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        content: content
+      // Actualizar el contenido en la tabla `contents`
+      await axios.put(`http://localhost:8000/contents/${contentId}`, {
+        content
       });
-      setIsEditing(false);
+      setIsEditing(false);  // Salir del modo de edición
     } catch (error) {
       console.error('Error al guardar el contenido editado:', error);
     }
@@ -83,9 +73,9 @@ export default function ContentPage() {
               />
             ) : (
               <div
-  dangerouslySetInnerHTML={{ __html: content }}
-  style={{ whiteSpace: 'pre-wrap' }}
-></div>
+                dangerouslySetInnerHTML={{ __html: content }}
+                style={{ whiteSpace: 'pre-wrap' }}
+              ></div>
             )}
             <Button onClick={handleDeleteContent} color="secondary">
               Eliminar Contenido

@@ -191,7 +191,7 @@ export const CallOpenAIContent = async (title, keyword, outline, buyerpersona_pr
 
 export const CallOpenAITitle = async (keyword, titlePrompt, userId) => {
   const systemPrompt = `Eres un experto en SEO, estoy a punto de pedirte ideas para títulos de blog con el objetivo de posicionarme en Google, ${titlePrompt}`;
-  const userPrompt = `Dame tres ideas de un título para blog con la keyword: ${keyword}`;
+  const userPrompt = `Dame dos ideas de un título para blog con la keyword: ${keyword}`;
   
   // Use getOpenAIConfig to retrieve both the API key and the model preference
   const { openaiKey, openaiModel } = await getOpenAIConfig(userId);

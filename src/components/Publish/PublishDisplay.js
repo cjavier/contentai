@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
@@ -79,15 +79,11 @@ export default function PublishDisplay() {
   const handleCategorySelect = async (category) => {
     setShowCategoryModal(false);
     setSelectedCategory(category);
-
     if (category) {
-      const db = getFirestore();
-      // Loop through all contents and update the category
       contents.forEach(async (content) => {
-        const contentRef = doc(db, 'contents', content.id);
-        await updateDoc(contentRef, { category: category });
+        await axios.put(`http://localhost:8000/contents/${content.id}`, { category });
       });
-      console.log(`Category '${category}' added to all contents.`);
+      console.log(`Categoría '${category}' agregada a todos los contenidos.`);
     }
   };
 
@@ -96,20 +92,9 @@ export default function PublishDisplay() {
       console.error('Usuario no autenticado o keywordPlanId no proporcionado. No se pueden cargar los contenidos.');
       return;
     }
-
     try {
-      const db = getFirestore();
-      const contentsCollection = collection(db, 'contents');
-      console.log("el keyword plan: ",keywordPlanId)
-      const q = query(contentsCollection, where('keywordPlanId', '==', keywordPlanId));
-      const querySnapshot = await getDocs(q);
-
-      const contentsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setContents(contentsData);
+      const response = await axios.get(`http://localhost:8000/contents/keywordplan/${keywordPlanId}`);
+      setContents(response.data.contents);
     } catch (error) {
       console.error('Error al cargar los contenidos:', error);
     }
@@ -128,12 +113,9 @@ export default function PublishDisplay() {
   
   const handleContentPublishing = async (contentId) => {
     try {
-      const db = getFirestore();
-  
-      // Obtener los datos de WordPress del negocio asociado al usuario actual
-      const businessRef = doc(db, 'Business', currentUser.uid);
-      const businessDoc = await getDoc(businessRef);
-      const businessData = businessDoc.data();
+      // Obtener los datos del negocio desde el backend
+      const businessResponse = await axios.get(`http://localhost:8000/business/${currentUser.uid}`);
+      const businessData = businessResponse.data.business;
   
       // Verificar si los datos de WordPress existen
       if (!businessData.wpWebsiteUrl || !businessData.wpUsername || !businessData.wpAppPassword) {
@@ -141,29 +123,29 @@ export default function PublishDisplay() {
         return;
       }
   
-      // Obtener el título y el contenido de Firebase
-      const contentRef = doc(db, 'contents', contentId);
-      const contentDoc = await getDoc(contentRef);
-      const contentData = contentDoc.data();
+      // Obtener el título y el contenido desde el backend (en lugar de Firebase)
+      const contentResponse = await axios.get(`http://localhost:8000/contents/${contentId}`);
+      const contentData = contentResponse.data.content;
+  
       const title = contentData.title;
       const content = contentData.content;
       const categoryId = contentData.category;
   
-      // Configuración para la API de WordPress usando los datos del negocio
+      // Configuración para la API de WordPress usando los datos del negocio obtenidos desde el backend
       const url = `${businessData.wpWebsiteUrl}wp-json/wp/v2/posts`;
       const username = businessData.wpUsername;
       const password = businessData.wpAppPassword;
   
       const headers = {
         Authorization: 'Basic ' + btoa(username + ':' + password),
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       };
   
       const data = {
         title: title,
         content: content,
         status: 'publish',
-        categories: [categoryId] 
+        categories: [categoryId],
       };
   
       // Publicar el contenido en WordPress
@@ -171,11 +153,9 @@ export default function PublishDisplay() {
       const postUrl = response.data.link;
       console.log(`Contenido publicado con éxito en: ${postUrl}`);
   
-      // Guardar postUrl en Firebase bajo la propiedad 'published'
-      await updateDoc(contentRef, {
-        published: postUrl
-      });
-      console.log(`URL del post guardada con éxito en Firebase: ${postUrl}`);  
+      // Guardar la URL publicada en el backend
+      await axios.put(`http://localhost:8000/contents/${contentId}`, { published: postUrl });
+      console.log(`URL del post guardada con éxito en el backend: ${postUrl}`);
   
     } catch (error) {
       console.error('Error al publicar el contenido:', error);
@@ -186,38 +166,19 @@ export default function PublishDisplay() {
     try {
       setIsLoading(true);
       setBackdropMessage('Publicando contenidos...');
-  
       setPublishedContents(0);
-      setTotalContents(0);
-  
-      const db = getFirestore();
-  
-      // Obtener la colección de contenidos desde Firestore
-      const contentsCollection = collection(db, 'contents');
-  
-      // Consultar los documentos de contenidos asociados al keywordPlanId
-      const q = query(contentsCollection, where('keywordPlanId', '==', keywordPlanId));
-      const querySnapshot = await getDocs(q);
-  
-      const totalContentsToPublish = querySnapshot.docs.length;
-      setTotalContents(totalContentsToPublish);
-  
-      let publishedCount = 0;
-  
-      // Recorrer y publicar contenidos
-      for (const contentDoc of querySnapshot.docs) {
-        const contentId = contentDoc.id;
-        await handleContentPublishing(contentId);
-        publishedCount++;
-        setPublishedContents(publishedCount);
+      setTotalContents(contents.length);
+
+      for (const content of contents) {
+        await handleContentPublishing(content.id);
+        setPublishedContents((prev) => prev + 1);
       }
-  
+
       setIsLoading(false);
-      console.log('Todos los contenidos han sido publicados con éxito.');
-  
+      setBackdropMessage('Todos los contenidos han sido publicados con éxito.');
     } catch (error) {
-      setIsLoading(false);
       console.error('Error al publicar todos los contenidos:', error);
+      setIsLoading(false);
     }
   };
   
@@ -226,35 +187,14 @@ export default function PublishDisplay() {
   
 
 
-const handleContentDeletion = async (contentId) => {
-  try {
-    const db = getFirestore();
-    
-    // Referencia al documento que deseas eliminar en la colección 'contents'
-    const contentRef = doc(db, 'contents', contentId);
-    const contentDoc = await getDoc(contentRef);
-    const contentData = contentDoc.data();
-
-    // Extraer los IDs necesarios para navegar a la propiedad 'contentId' en el documento 'title'
-    const { keywordPlanId, keywordId, titleId } = contentData;
-
-    // Referencia al documento 'title' en el 'keyword' dentro del 'keyword plan'
-    const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-
-    // Borrar la propiedad 'contentId'
-    await updateDoc(titleRef, {
-      contentId: deleteField()
-    });
-
-    // Eliminar el documento completo en la colección 'contents'
-    await deleteDoc(contentRef);
-    
-    // Recargar los contenidos para reflejar los cambios en la UI
-    loadContents();
-  } catch (error) {
-    console.error('Error al eliminar el contenido:', error);
-  }
-};
+  const handleContentDeletion = async (contentId) => {
+    try {
+      await axios.delete(`http://localhost:8000/contents/${contentId}`);
+      setContents(contents.filter(content => content.id !== contentId));
+    } catch (error) {
+      console.error('Error al eliminar el contenido:', error);
+    }
+  };
 
 const handleAllContentsCategory = async () => {
   setShowCategoryModal(true);
@@ -299,7 +239,11 @@ const handleAllContentsCategory = async () => {
               <TableBody>
                 {contents.map((content, index) => (
                   <TableRow key={index}>
-                    <TableCell>{content.title}</TableCell>
+                    <TableCell>
+                      <Link to={`/contenidos/${content.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {content.contenttitle}
+                      </Link>
+                    </TableCell>
                     <TableCell>{countWordsInHtml(content.content)}</TableCell>
                     <TableCell>{content.category}</TableCell>
                     <TableCell>
@@ -334,7 +278,6 @@ const handleAllContentsCategory = async () => {
           {backdropMessage}
         </Typography>
       </Backdrop>
-      {/* ... (rest of your component layout) */}
       <CategorySelectModal
         open={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}

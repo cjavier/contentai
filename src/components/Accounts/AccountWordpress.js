@@ -117,17 +117,7 @@ export default function AccountWordpress({ onSubmitSuccess, submitButtonText = "
                 <Button variant="contained" onClick={handleSubmit}>
                     {submitButtonText}
                 </Button>
-                <div style={{ marginTop: '20px' }}>
-                    <iframe 
-                        width="560" 
-                        height="315" 
-                        src="https://www.youtube.com/embed/anvquOeerl4" 
-                        title="Video de Instrucciones"
-                        frameBorder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowFullScreen>
-                    </iframe>
-                </div>
+                
             </Paper>
         </Grid>
     );

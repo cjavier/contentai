@@ -13,172 +13,84 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Title from './Title';
-import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../../AuthContext';
 import Layout from '../Layout/Layout';
-
+import { AuthContext } from '../../AuthContext';
+import axios from 'axios'; // Import axios for HTTP requests
 
 export default function TitlesDisplay() {
-  const [keywordPlans, setKeywordPlans] = useState([]);
+  const [titles, setTitles] = useState([]);
   const { currentUser } = useContext(AuthContext);
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
   const { keywordPlanId } = useParams();
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const itemsPerPage = 10;
-
-  
-
 
   useEffect(() => {
     if (!currentUser) {
-      console.error('Usuario no autenticado. No se pueden cargar los KeywordPlans.');
+      console.error('Usuario no autenticado. No se pueden cargar los títulos.');
       return;
     }
-  
-    const loadKeywordPlans = async () => {
-      /* const cachedKeywordPlans = sessionStorage.getItem(`keywordPlans_${keywordPlanId}`);
-      if (cachedKeywordPlans) {
-        setKeywordPlans(JSON.parse(cachedKeywordPlans));
-        return;
-      } */
-      try {
-        const db = getFirestore();
-    
-        // Obtener una referencia al documento específico de KeywordPlan
-        const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-        const keywordPlanDoc = await getDoc(keywordPlanRef);
-    
-        if (!keywordPlanDoc.exists()) {
-          console.error('El KeywordPlan no existe');
-          return;
-        }
-    
-        const keywordsSnapshot = await getDocs(collection(keywordPlanRef, 'keywords'));
-        const keywords = [];
-    
-        for (const keywordDoc of keywordsSnapshot.docs) {
-          const keywordData = {
-            id: keywordDoc.id,
-            ...keywordDoc.data()
-          };
-    
-          // Recuperar los títulos para esta keyword
-          const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-          keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
-            id: titleDoc.id,
-            title: titleDoc.data().title
-          }));
-    
-          keywords.push(keywordData);
-        }
-    
-        const keywordPlan = {
-          id: keywordPlanDoc.id,
-          ...keywordPlanDoc.data(),
-          keywords
-        };
-    
-        setKeywordPlans([keywordPlan]);
-        sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify([keywordPlan]));
-      } catch (error) {
-        console.error('Error al cargar los KeywordPlans:', error);
-      }
-      
-    };
-    
-  
-    loadKeywordPlans();
-  }, [currentUser]);
 
-  const handleDeleteTitle = async (keywordPlanId, keywordId, titleId) => {
+    const loadTitles = async () => {
+      try {
+        // Fetch all titles associated with the keyword plan
+        const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}/titles`);
+        const titlesData = response.data.titles;
+
+        setTitles(titlesData);
+      } catch (error) {
+        console.error('Error al cargar los títulos:', error);
+      }
+    };
+
+    loadTitles();
+  }, [currentUser, keywordPlanId]);
+
+  const handleDeleteTitle = async (titleId) => {
     try {
-      const db = getFirestore();
-  
-      // Obtener una referencia al documento del título que deseas eliminar
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-  
-      // Eliminar el documento del título
-      await deleteDoc(titleRef);
-  
+      // Delete the title
+      await axios.delete(`http://localhost:8000/titles/${titleId}`);
+
       console.log('Título eliminado exitosamente.');
-  
-      // Actualizar el estado eliminando el título del keyword correspondiente
-      setKeywordPlans((prevKeywordPlans) =>
-        prevKeywordPlans.map((keywordPlan) => 
-          keywordPlan.id === keywordPlanId 
-            ? { 
-                ...keywordPlan, 
-                keywords: keywordPlan.keywords.map(keyword => 
-                  keyword.id === keywordId
-                    ? { ...keyword, titles: keyword.titles.filter(title => title.id !== titleId) }
-                    : keyword
-                )
-              }
-            : keywordPlan
-        )
-      );
+
+      // Update the state by removing the deleted title
+      setTitles((prevTitles) => prevTitles.filter((title) => title.id !== titleId));
     } catch (error) {
       console.error('Error al eliminar el título:', error);
     }
-    sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify(keywordPlans));
   };
-  
 
   const startEditing = (titleId, currentTitle) => {
     setEditingTitleId(titleId);
     setEditedTitle(currentTitle);
   };
-  
-  const handleEditTitle = async (keywordPlanId, keywordId, titleId) => {
+
+  const handleEditTitle = async (titleId) => {
     try {
-      const db = getFirestore();
-  
-      // Actualizar el título en Firebase
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, { title: editedTitle });
-  
-      // Actualizar el estado local
-      setKeywordPlans((prevKeywordPlans) =>
-        prevKeywordPlans.map((keywordPlan) => 
-          keywordPlan.id === keywordPlanId 
-            ? { 
-                ...keywordPlan, 
-                keywords: keywordPlan.keywords.map(keyword => 
-                  keyword.id === keywordId
-                    ? { 
-                        ...keyword, 
-                        titles: keyword.titles.map(title => 
-                          title.id === titleId
-                            ? { ...title, title: editedTitle }
-                            : title
-                        )
-                      }
-                    : keyword
-                )
-              }
-            : keywordPlan
+      // Update the title in the backend
+      await axios.put(`http://localhost:8000/titles/${titleId}`, { title: editedTitle });
+
+      // Update the local state
+      setTitles((prevTitles) =>
+        prevTitles.map((title) =>
+          title.id === titleId ? { ...title, title: editedTitle } : title
         )
       );
-  
-      // Salir del modo de edición
+
+      // Exit edit mode
       setEditingTitleId(null);
       setEditedTitle('');
-  
     } catch (error) {
       console.error('Error al editar el título:', error);
     }
-    sessionStorage.setItem(`keywordPlans_${keywordPlanId}`, JSON.stringify(keywordPlans));
   };
-  
 
   const wrapTextStyle = {
-    maxWidth: '150px', // Puedes ajustar este valor según tus necesidades
+    maxWidth: '150px',
     whiteSpace: 'normal',
-    maxHeight: '60px', // Ajusta según tus necesidades
-    overflow: 'auto'   // Esto agregará barras de desplazamiento si el contenido excede el maxHeight
+    maxHeight: '60px',
+    overflow: 'auto'
   };
+
   const inputStyle = {
     width: '100%',
     padding: '5px',
@@ -186,97 +98,60 @@ export default function TitlesDisplay() {
     border: '1px solid #ccc',
     borderRadius: '4px'
   };
-  
-  const handleDeleteAllTitles = async (keywordPlanId) => {
-    try {
-      const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-      if (!keywordPlan) {
-        console.error('Keyword plan not found');
-        return;
-      }
-  
-      for (const keyword of keywordPlan.keywords) {
-        for (const title of keyword.titles) {
-          // Call handleDeleteTitle for each title
-          await handleDeleteTitle(keywordPlanId, keyword.id, title.id);
-        }
-      }
-  
-      console.log('All titles have been deleted.');
-    } catch (error) {
-      console.error('Error deleting all titles:', error);
-    }
-  };
-  
-  
 
   return (
     <Layout>
-    <Grid item xs={12}>
-      {keywordPlans.map((keywordPlan) => (
-        <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Keyword Plan: {keywordPlan.planName}</Title>
-            {/* Button to delete all titles in the keyword plan */}
-            <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => handleDeleteAllTitles(keywordPlan.id)}
-              >
-                Eliminar Todos los Títulos del Plan
-              </Button>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Keyword</TableCell>
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell>
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell>
+      <Grid item xs={12}>
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <Title>Títulos del Keyword Plan</Title>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Keyword ID</TableCell>
+                <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell>
+                <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {titles.map((title) => (
+                <TableRow key={title.id}>
+                  <TableCell style={wrapTextStyle}>
+                    {editingTitleId === title.id ? (
+                      <input
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                        style={inputStyle}
+                      />
+                    ) : (
+                      title.title
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>{title.keywordId}</TableCell>
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>
+                    {editingTitleId === title.id ? (
+                      <Button onClick={() => handleEditTitle(title.id)}>Guardar</Button>
+                    ) : (
+                      <IconButton color="primary" onClick={() => startEditing(title.id, title.title)}>
+                        <EditIcon />
+                      </IconButton>
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>
+                    <IconButton
+                      aria-label="delete"
+                      color="error"
+                      onClick={() => handleDeleteTitle(title.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {keywordPlan.keywords.map((keyword) => 
-                  keyword.titles.map((title, index) => (
-                    <TableRow key={index}>
-                      <TableCell style={wrapTextStyle}>
-                        {editingTitleId === title.id ? (
-                          <input 
-                            value={editedTitle} 
-                            onChange={(e) => setEditedTitle(e.target.value)} 
-                            style={inputStyle}
-                          />
-                        ) : (
-                          title.title
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ width: '15%', textAlign: 'right' }}>{keyword.keyword}</TableCell>
-                      <TableCell sx={{ width: '15%', textAlign: 'right' }}>
-                        {editingTitleId === title.id ? (
-                          <Button onClick={() => handleEditTitle(keywordPlan.id, keyword.id, title.id)}>Guardar</Button>
-                        ) : (
-                          <IconButton color="primary" onClick={() => startEditing(title.id, title.title)}>
-                            <EditIcon />
-                          </IconButton>
-                                )}
-                      </TableCell>
-                      <TableCell sx={{ width: '15%', textAlign: 'right' }}>
-                      <IconButton
-                        aria-label="delete"
-                        color="error"
-                        onClick={() => handleDeleteTitle(keywordPlan.id, keyword.id, title.id)}
-                      >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Paper>
-        </Grid>
-      ))}
-    </Grid>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Grid>
     </Layout>
   );
 }

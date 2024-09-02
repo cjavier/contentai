@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useMemo } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -19,8 +19,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import CircularProgress from '@mui/material/CircularProgress';
 import Backdrop from '@mui/material/Backdrop';
 import TextField from '@mui/material/TextField';
@@ -29,19 +27,16 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import AddIcon from '@mui/icons-material/Add';
 import TitleIcon from '@mui/icons-material/Title';
 import Title from '../Titles/Title';
-import { collection, getFirestore, getDocs, query, where, doc, getDoc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { AuthContext } from '../../AuthContext';
-import { CallOpenAITitle } from '../OpenAI'; 
 import Layout from '../Layout/Layout';
-
+import { AuthContext } from '../../AuthContext';
+import { CallOpenAITitle } from '../OpenAI';
+import axios from 'axios'; // Import axios for HTTP requests
 
 export default function KeywordsDisplay() {
   const { keywordPlanId } = useParams();
   const [keywordPlans, setKeywordPlans] = useState([]);
   const { currentUser } = useContext(AuthContext);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-  const [buyerPersonas, setBuyerPersonas] = useState([]);
-  const [selectedBuyerPersona, setSelectedBuyerPersona] = useState(null);
   const [selectedKeywordPlan, setSelectedKeywordPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
@@ -49,50 +44,6 @@ export default function KeywordsDisplay() {
   const [newKeywords, setNewKeywords] = useState('');
   const [editingKeywordId, setEditingKeywordId] = useState(null);
   const [editingKeywordValue, setEditingKeywordValue] = useState('');
-  const [keywordsCache, setKeywordsCache] = useState({});
-const [buyerPersonasCache, setBuyerPersonasCache] = useState({});
-const [isBuyerPersonaDialogVisible, setIsBuyerPersonaDialogVisible] = useState(false);
-const [currentKeywordPlanForBP, setCurrentKeywordPlanForBP] = useState(null);
-
-const memoizedBuyerPersonas = useMemo(() => buyerPersonas, [buyerPersonas]);
-
-const memoizedKeywordPlans = useMemo(() => {
-  return keywordPlans.map(keywordPlan => ({
-    ...keywordPlan,
-    keywords: keywordPlan.keywords.map(keyword => ({
-      ...keyword,
-      // Assuming titles is already an array of title objects
-      titles: keyword.titles,
-    })),
-  }));
-}, [keywordPlans]);
-
-
-
-  const handleEditKeywordStart = (keywordId, keywordValue) => {
-    setEditingKeywordId(keywordId);
-    setEditingKeywordValue(keywordValue);
-  };
-
-  const showTitleCreationPopup = (keywordPlanId) => {
-    setSelectedKeywordPlan(keywordPlanId);
-    setIsPopupVisible(true);
-  };
-  const handleOpenAddKeywordModal = (keywordPlanId) => {
-    setSelectedKeywordPlan(keywordPlanId); // Actualiza el estado con el ID del KeywordPlan
-    setIsAddKeywordModalVisible(true);
-  };
-  
-
-  const handleCloseAddKeywordModal = () => {
-    setIsAddKeywordModalVisible(false);
-  };
-
-  const openBuyerPersonaDialog = (keywordPlanId) => {
-    setCurrentKeywordPlanForBP(keywordPlanId);
-    setIsBuyerPersonaDialogVisible(true);
-  };  
-  
 
   useEffect(() => {
     if (!currentUser) {
@@ -101,68 +52,35 @@ const memoizedKeywordPlans = useMemo(() => {
     }
 
     const loadKeywordPlans = async () => {
-      if (!currentUser || !keywordPlanId) {
-        console.error('Usuario no autenticado o keywordPlanId no proporcionado. No se pueden cargar los KeywordPlans.');
-        return;
-      }
-    
       try {
-        const db = getFirestore();
-    
-        // Obtener una referencia al documento del KeywordPlan específico
-        const keywordPlanDocRef = doc(db, 'keywordsplans', keywordPlanId);
-    
-        // Obtener el documento del KeywordPlan
-        const keywordPlanDoc = await getDoc(keywordPlanDocRef);
-        if (!keywordPlanDoc.exists()) {
-          console.error('El KeywordPlan solicitado no existe.');
-          return;
-        }
-    
-        // Cargar las keywords asociadas al KeywordPlan
-        const keywordsSnapshot = await getDocs(collection(keywordPlanDocRef, 'keywords'));
-        const keywords = [];
-        for (const keywordDoc of keywordsSnapshot.docs) {
-          const keywordData = {
-            id: keywordDoc.id,
-            ...keywordDoc.data()
-          };
-    
-          // Recuperar los títulos para esta keyword
-          const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-          keywordData.titles = titlesSnapshot.docs.map(titleDoc => titleDoc.data());
-    
-          keywords.push(keywordData);
-        }
-    
-        const keywordPlan = {
-          id: keywordPlanDoc.id,
-          ...keywordPlanDoc.data(),
-          keywords
-        };
-    
+        // Obtener el keyword plan específico y sus keywords
+        const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+        const keywordPlan = response.data.keywordPlan;
+
         setKeywordPlans([keywordPlan]); // Establecer el estado con un array que contiene solo este KeywordPlan
       } catch (error) {
         console.error('Error al cargar el KeywordPlan:', error);
       }
     };
 
-     // Cargar Buyer Personas
-     const loadBuyerPersonas = async () => {
-      const db = getFirestore();
-      const buyerPersonasCollection = collection(db, 'buyerpersonas');
-      const q = query(buyerPersonasCollection, where('userId', '==', currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      setBuyerPersonas(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
+    loadKeywordPlans();
+  }, [currentUser, keywordPlanId]);
 
-    if (!keywordsCache[keywordPlanId]) {
-      loadKeywordPlans();
-    }
-    if (!buyerPersonasCache[currentUser.uid]) {
-      loadBuyerPersonas();
-    }
-  }, [currentUser, keywordPlanId, keywordsCache, buyerPersonasCache]);
+  const handleEditKeywordStart = (keywordId, keywordValue) => {
+    setEditingKeywordId(keywordId);
+    setEditingKeywordValue(keywordValue);
+  };
+
+  
+
+  const handleOpenAddKeywordModal = (keywordPlanId) => {
+    setSelectedKeywordPlan(keywordPlanId); // Actualiza el estado con el ID del KeywordPlan
+    setIsAddKeywordModalVisible(true);
+  };
+
+  const handleCloseAddKeywordModal = () => {
+    setIsAddKeywordModalVisible(false);
+  };
 
   const handleAddKeywords = async () => {
     try {
@@ -170,88 +88,41 @@ const memoizedKeywordPlans = useMemo(() => {
         console.error('Usuario no autenticado. No se pueden agregar keywords.');
         return;
       }
-  
+
       if (!selectedKeywordPlan) {
         console.error('No se ha seleccionado un KeywordPlan.');
         return;
       }
-  
-      const db = getFirestore();
-  
-      // Obtener una referencia al KeywordPlan seleccionado
-      const keywordsPlanDocRef = doc(db, 'keywordsplans', selectedKeywordPlan);
-  
-      // Agregar cada keyword como un nuevo documento en la subcolección 'keywords' del KeywordsPlan seleccionado
+
+      // Agregar keywords al KeywordPlan
       const keywordsArray = newKeywords.split('\n');
-      const newKeywordsData = [];
-      for (let keyword of keywordsArray) {
-        const keywordRef = await addDoc(collection(keywordsPlanDocRef, 'keywords'), { keyword });
-        newKeywordsData.push({ id: keywordRef.id, keyword });
-      }
-  
+      await axios.post(`http://localhost:8000/keywords`, {
+        keywordPlanId: selectedKeywordPlan,
+        keywords: keywordsArray,
+      });
+
       console.log('Keywords agregadas exitosamente al KeywordPlan.');
-  
+
       // Limpiar el estado de newKeywords y cerrar el modal
       setNewKeywords('');
       setIsAddKeywordModalVisible(false);
-  
-      // Actualizar el estado directamente con las nuevas keywords
-      setKeywordPlans((prevKeywordPlans) =>
-        prevKeywordPlans.map((keywordPlan) =>
-          keywordPlan.id === selectedKeywordPlan
-            ? {
-                ...keywordPlan,
-                keywords: [...keywordPlan.keywords, ...newKeywordsData],
-              }
-            : keywordPlan
-        )
-      );
-  
+
+      // Actualizar el estado recargando los KeywordPlans
+      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+      const keywordPlan = response.data.keywordPlan;
+      setKeywordPlans([keywordPlan]);
     } catch (error) {
       console.error('Error al agregar keywords al KeywordPlan:', error);
     }
   };
 
-  const saveBuyerPersonaToKeywordPlan = async () => {
-    if (!currentKeywordPlanForBP || !selectedBuyerPersona) return;
-  
-    const db = getFirestore();
-    const keywordPlanRef = doc(db, 'keywordsplans', currentKeywordPlanForBP);
-  
-    try {
-      await updateDoc(keywordPlanRef, {
-        buyerpersonaid: selectedBuyerPersona
-      });
-  
-      console.log('Buyer Persona updated successfully.');
-     
-  
-      setIsBuyerPersonaDialogVisible(false); // Close the dialog
-    } catch (error) {
-      console.error('Error updating Buyer Persona:', error);
-      // Handle error (e.g., show a message to the user)
-    }
-  };
-  
-  
   const handleDeleteKeywordPlan = async (keywordPlanId) => {
     try {
-      const db = getFirestore();
-  
-      // Primero, eliminamos todas las keywords asociadas al KeywordPlan
-      const keywordsCollectionRef = collection(doc(db, 'keywordsplans', keywordPlanId), 'keywords');
-      const keywordsSnapshot = await getDocs(keywordsCollectionRef);
-  
-      for (const keywordDoc of keywordsSnapshot.docs) {
-        await deleteDoc(keywordDoc.ref);
-      }
-  
-      // Luego, eliminamos el KeywordPlan
-      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-      await deleteDoc(keywordPlanRef);
-  
+      // Eliminar el KeywordPlan
+      await axios.delete(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+
       console.log('KeywordPlan eliminado exitosamente.');
-  
+
       // Actualiza el estado eliminando el KeywordPlan
       setKeywordPlans((prevKeywordPlans) =>
         prevKeywordPlans.filter((keywordPlan) => keywordPlan.id !== keywordPlanId)
@@ -267,344 +138,240 @@ const memoizedKeywordPlans = useMemo(() => {
         console.error('Falta keywordPlanId o keywordId:', keywordPlanId, keywordId);
         return;
       }
-  
-      const db = getFirestore();
-  
-      // Obtener una referencia al documento de la keyword que deseas eliminar
-      const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
-  
-      // Eliminar el documento de la keyword
-      await deleteDoc(keywordRef);
-  
+
+      // Eliminar la keyword
+      await axios.delete(`http://localhost:8000/keywords/${keywordId}`);
+
       console.log('Keyword eliminada exitosamente.');
-  
-      // Actualizar el estado eliminando la keyword del keywordPlan correspondiente
-      setKeywordPlans((prevKeywordPlans) =>
-        prevKeywordPlans.map((keywordPlan) => 
-          keywordPlan.id === keywordPlanId 
-            ? { ...keywordPlan, keywords: keywordPlan.keywords.filter(keyword => keyword.id !== keywordId) }
-            : keywordPlan
-        )
-      );
+
+      // Actualizar el estado recargando los KeywordPlans
+      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+      const keywordPlan = response.data.keywordPlan;
+      setKeywordPlans([keywordPlan]);
     } catch (error) {
       console.error('Error al eliminar la keyword:', error);
     }
   };
 
-  
-    
-
   const handleTitleCreation = async (keywordPlanId) => {
     try {
       setIsLoading(true); // Mostrar el CircularProgress
-      setBackdropMessage('Creando títulos...'); // Mensaje mientras se crean los títulos
-      const db = getFirestore();
-      const selectedBP = memoizedBuyerPersonas.find(bp => bp.id === selectedBuyerPersona);
-      const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
-  
-      // Si hay un buyer persona seleccionado, actualiza el keywordPlan con el buyerpersonaid
-      if (selectedBP) {
-        const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-        await updateDoc(keywordPlanRef, {
-          buyerpersonaid: selectedBP.id
+      setBackdropMessage('Creando títulos...'); // Mensaje inicial
+
+      const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
+
+      if (!keywordPlan || !keywordPlan.keywords) {
+        setBackdropMessage('No se encontraron keywords.');
+        setIsLoading(false);
+        return;
+      }
+
+      for (let i = 0; i < keywordPlan.keywords.length; i++) {
+        const keyword = keywordPlan.keywords[i];
+
+        setBackdropMessage(`Creando títulos para la keyword "${keyword.keyword}" (${i + 1}/${keywordPlan.keywords.length})...`);
+
+        const titleIdeas = await CallOpenAITitle(keyword.keyword, keywordPlan.titlePrompt, currentUser.uid);
+
+        await axios.post(`http://localhost:8000/titles`, {
+          keywordId: keyword.id,
+          keywordplanid: keywordPlanId,
+          titles: titleIdeas
         });
       }
-  
-      // Iterar sobre cada keyword en el keywordPlan
-      for (const keyword of keywordPlans.find(kp => kp.id === keywordPlanId).keywords) {
-        // Llamar a la función CallOpenAITitle para obtener las ideas de títulos
-        const titleIdeas = await CallOpenAITitle(keyword.keyword, titlePrompt, currentUser.uid);
-  
-        // Iterar sobre cada idea de título y guardarla en Firebase
-        const titlesRef = collection(doc(db, 'keywordsplans', keywordPlanId, 'keywords', keyword.id), 'titles');
-        for (const titleIdea of titleIdeas) {
-          await addDoc(titlesRef, { title: titleIdea });
-        } 
-      }
-  
-      console.log('Títulos creados exitosamente.');
-      setBackdropMessage('Títulos creados exitosamente'); // Mensaje de éxito
+
+      setBackdropMessage('Títulos creados exitosamente.');
       setTimeout(() => {
-        setIsLoading(false); // Ocultar el Backdrop después de un breve tiempo
-        setBackdropMessage(''); // Limpiar el mensaje
-      }, 2000); 
-  
+        setIsLoading(false);
+        setBackdropMessage('');
+      }, 2000);
+
     } catch (error) {
       console.error('Error al crear títulos:', error);
-      setBackdropMessage('Error al crear títulos'); // Mensaje de error
+      setBackdropMessage('Error al crear títulos');
       setTimeout(() => {
-        setIsLoading(false); // Ocultar el Backdrop después de un breve tiempo
-        setBackdropMessage(''); // Limpiar el mensaje
-      }, 2000); // Puedes ajustar el tiempo según lo que consideres adecuado
-    } 
+        setIsLoading(false);
+        setBackdropMessage('');
+      }, 2000);
+    }
   };
 
   const handleSingleTitleCreation = async (keywordPlanId, keywordId) => {
     const keywordPlan = keywordPlans.find(kp => kp.id === keywordPlanId);
-    if (!keywordPlan.buyerpersonaid) {
-    alert("Necesitas agregar un Buyer Persona antes de crear títulos.");
-    return;
-  }
-  const keyword = keywordPlan.keywords.find(k => k.id === keywordId);
-  console.log(keyword);
+    const keyword = keywordPlan.keywords.find(k => k.id === keywordId);
+    console.log(keyword);
     try {
-      setIsLoading(true); 
+      setIsLoading(true);
       setBackdropMessage('Creando los títulos para la keyword...'); // Optional: Show a backdrop message
-      
-      // Find the buyer persona (if any) selected for title creation
-      const selectedBP = buyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid);
-      const titlePrompt = selectedBP ? selectedBP.title_prompt : '';
-      console.log("obteniendo el prompt para el title: ", titlePrompt);
-      
-      const db = getFirestore();
-      const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
-      
-      // Assuming CallOpenAITitle returns an array of title ideas
-      console.log("keyword: ", keyword.keyword, "buyerpersona: ", selectedBP.name, "userId: ", currentUser.uid);
-      const titleIdeas = await CallOpenAITitle(keyword.keyword, titlePrompt, currentUser.uid);
-      console.log("titleIdeas: ", titleIdeas);
-      // Save each generated title in Firestore
-      const titlesRef = collection(doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId), 'titles');
-        for (const titleIdea of titleIdeas) {
-          await addDoc(titlesRef, { title: titleIdea });
-        } 
-      
-      console.log('Title(s) created successfully.');
-      setIsLoading(false); // Hide loading indicator
-      setBackdropMessage(''); // Clear any backdrop message
+
+      // Llamar a la función CallOpenAITitle para obtener las ideas de títulos
+      const titleIdeas = await CallOpenAITitle(keyword.keyword, keywordPlan.titlePrompt, currentUser.uid);
+
+      // Guardar cada título generado en el backend
+      await axios.post(`http://localhost:8000/titles`, {
+        keywordId: keyword.id,
+        keywordplanid: keywordPlanId,
+        titles: titleIdeas
+      });
+
+      console.log('Títulos creados exitosamente.');
+      setBackdropMessage('Títulos creados exitosamente');
+      setTimeout(() => {
+        setIsLoading(false);
+        setBackdropMessage('');
+      }, 2000);
     } catch (error) {
-      console.error('Error creating title:', error);
-      setIsLoading(false); // Ensure loading indicator is hidden even on error
-      setBackdropMessage('Error creating title'); // Optionally show an error message
+      console.error('Error al crear títulos:', error);
+      setIsLoading(false);
+      setBackdropMessage('Error al crear títulos');
+      setTimeout(() => {
+        setBackdropMessage('');
+      }, 2000);
     }
   };
-  
 
   const handleSaveEditedKeyword = async (keywordPlanId, keywordId) => {
     try {
-      const db = getFirestore();
-      const keywordRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId);
-      await updateDoc(keywordRef, { keyword: editingKeywordValue });
-  
-      // Actualizar el estado local
-      setKeywordPlans((prevKeywordPlans) =>
-        prevKeywordPlans.map((keywordPlan) =>
-          keywordPlan.id === keywordPlanId
-            ? {
-                ...keywordPlan,
-                keywords: keywordPlan.keywords.map((keyword) =>
-                  keyword.id === keywordId
-                    ? { ...keyword, keyword: editingKeywordValue }
-                    : keyword
-                ),
-              }
-            : keywordPlan
-        )
-      );
-  
-      // Resetear el estado de edición
-      setEditingKeywordId(null);
-      setEditingKeywordValue('');
-    } catch (error) {
-      console.error('Error al actualizar la keyword:', error);
-    }
+      // Actualizar la keyword en el backend
+      await axios.put(`http://localhost:8000/keywords/${keywordId}`,
+        { keyword: editingKeywordValue });
+        // Actualizar el estado local
+  setKeywordPlans((prevKeywordPlans) =>
+    prevKeywordPlans.map((keywordPlan) =>
+      keywordPlan.id === keywordPlanId
+        ? {
+            ...keywordPlan,
+            keywords: keywordPlan.keywords.map((keyword) =>
+              keyword.id === keywordId
+                ? { ...keyword, keyword: editingKeywordValue }
+                : keyword
+            ),
+          }
+        : keywordPlan
+    )
+  );
+
+  // Resetear el estado de edición
+  setEditingKeywordId(null);
+  setEditingKeywordValue('');
+} catch (error) {
+  console.error('Error al actualizar la keyword:', error);
+}
   };
-  
-  
-  
-  
-  
-  
-  
 
   return (
     <Layout>
-    <Grid item xs={12}>
-      {/* Diálogo para seleccionar Buyer Persona */}
-      <Dialog open={isPopupVisible} onClose={() => setIsPopupVisible(false)}>
-        <DialogTitle>Selecciona el Buyer Persona</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Por favor, selecciona el Buyer Persona que deseas usar para crear ideas de títulos.
-          </DialogContentText>
-          <Select
-            fullWidth
-            value={selectedBuyerPersona}
-            onChange={(e) => setSelectedBuyerPersona(e.target.value)}
-          >
-            {memoizedBuyerPersonas.map(bp => (
-              <MenuItem key={bp.id} value={bp.id}>{bp.name}</MenuItem>
-            ))}
-          </Select>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsPopupVisible(false)} color="primary">
-            Cancelar
-          </Button>
-          <Button onClick={() => {
-            setIsPopupVisible(false);
-            handleTitleCreation(selectedKeywordPlan); // Pasar el keywordPlanId seleccionado
-          }} color="primary">
-            Continuar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog for selecting a Buyer Persona for a Keyword Plan */}
-        <Dialog open={isBuyerPersonaDialogVisible} onClose={() => setIsBuyerPersonaDialogVisible(false)}>
-          <DialogTitle>Select Buyer Persona</DialogTitle>
+      <Grid item xs={12}>
+        {/* Diálogo para agregar keywords */}
+        <Dialog open={isAddKeywordModalVisible} onClose={handleCloseAddKeywordModal}>
+          <DialogTitle>Agregar Keywords al Plan</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Please select the Buyer Persona you wish to associate with this Keyword Plan.
+              Ingresa las keywords que deseas agregar:
             </DialogContentText>
-            <Select
+            <TextField
               fullWidth
-              value={selectedBuyerPersona}
-              onChange={(e) => setSelectedBuyerPersona(e.target.value)}
-            >
-              {memoizedBuyerPersonas.map(bp => (
-                <MenuItem key={bp.id} value={bp.id}>{bp.name}</MenuItem>
-              ))}
-            </Select>
+              sx={{ m: 1 }}
+              multiline
+              maxRows={8}
+              value={newKeywords}
+              onChange={(e) => setNewKeywords(e.target.value)}
+            />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsBuyerPersonaDialogVisible(false)} color="primary">
-              Cancel
+            <Button onClick={handleCloseAddKeywordModal} color="primary">
+              Cancelar
             </Button>
-            <Button onClick={saveBuyerPersonaToKeywordPlan} color="primary">
-              Save
+            <Button onClick={handleAddKeywords} color="primary">
+              Agregar Keywords
             </Button>
           </DialogActions>
         </Dialog>
-
-       {/* Diálogo para agregar keywords */}
-       <Dialog open={isAddKeywordModalVisible} onClose={handleCloseAddKeywordModal}>
-        <DialogTitle>Agregar Keywords al Plan</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Ingresa las keywords que deseas agregar:
-          </DialogContentText>
-         
-          <TextField 
-          fullWidth sx={{ m: 1 }}
-                    multiline
-                    maxRows={8}
-                    value={newKeywords}
-                    onChange={(e) => setNewKeywords(e.target.value)}
-                />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAddKeywordModal} color="primary">
-            Cancelar
-          </Button>
-          <Button onClick={handleAddKeywords} color="primary">
-            Agregar Keywords
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Keyword list */}
-      {keywordPlans.map((keywordPlan) => (
-        <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Keyword Plan: {keywordPlan.planName}</Title>
-            <Typography component="div" variant="subtitle1">
-        Buyer Persona:  
-        {keywordPlan.buyerpersonaid ? (
-          memoizedBuyerPersonas.find(bp => bp.id === keywordPlan.buyerpersonaid)?.name || 'Unknown'
-        ) : (
-          <>
-            Unknown
-            <Button 
-              onClick={() => openBuyerPersonaDialog(keywordPlan.id)}
-              color="primary"
-              size="small"
-              style={{marginLeft: 8}}
-            >
-              Add Buyer Persona
-            </Button>
-          </>
-        )}
-      </Typography>
-      <Table size="small">
-  <TableHead>
-    <TableRow>
-      <TableCell>Keyword</TableCell>
-      <TableCell sx={{ textAlign: 'right' }}>Numero de Títulos</TableCell>
-      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Crear Títulos</TableCell>
-      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell>
-      <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell>
-    </TableRow>
-  </TableHead>
-  <TableBody>
-    {keywordPlan.keywords.map((keyword, index) => (
-      <TableRow key={index}>
-        <TableCell>
-          {editingKeywordId === keyword.id ? (
-            <TextField
-              value={editingKeywordValue}
-              onChange={(e) => setEditingKeywordValue(e.target.value)}
-            />
-          ) : (
-            keyword.keyword
-          )}
-        </TableCell>
-        <TableCell sx={{ textAlign: 'right' }}>{keyword.titles ? keyword.titles.length : 0}</TableCell>
-        <TableCell sx={{ textAlign: 'right' }}>
-          <IconButton
-            aria-label="create"
-            color="primary"
-            onClick={() => handleSingleTitleCreation(keywordPlan.id, keyword.id)}
-          >
-            <LightbulbIcon />
-          </IconButton>
-        </TableCell>
-      <TableCell sx={{ textAlign: 'right' }}>
-        {editingKeywordId === keyword.id ? (
-          <IconButton
-            aria-label="save"
-            color="primary"
-            onClick={() => handleSaveEditedKeyword(keywordPlan.id, keyword.id)}
-          >
-            <SaveIcon /> {/* Puedes usar otro ícono si lo prefieres */}
-          </IconButton>
-        ) : (
-          <IconButton
-            aria-label="edit"
-            color="primary"
-            onClick={() => handleEditKeywordStart(keyword.id, keyword.keyword)}
-          >
-            <EditIcon />
-          </IconButton>
-        )}
-          </TableCell>
-          <TableCell sx={{ textAlign: 'right' }}>
-            <IconButton
-              aria-label="delete"
-              color="error"
-              onClick={() => handleDeleteKeyword(keywordPlan.id, keyword.id)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </TableCell>
-        </TableRow>
-  ))}
-              </TableBody>
-            </Table>
-            <BottomNavigation showLabels>
-              <BottomNavigationAction label="Agregar Keywords" icon={<AddIcon />} onClick={() => handleOpenAddKeywordModal(keywordPlan.id)} />
-              <BottomNavigationAction label="Crear Ideas de Títulos" icon={<TitleIcon />} onClick={() => showTitleCreationPopup(keywordPlan.id)} />
-              <BottomNavigationAction label="Borrar Keyword Plan" icon={<DeleteIcon />} onClick={() => handleDeleteKeywordPlan(keywordPlan.id)} />
-            </BottomNavigation>
-          </Paper>
-        </Grid>
-      ))}
-     <Backdrop open={isLoading} style={{ zIndex: 9999, color: '#fff', flexDirection: 'column' }}>
-    <CircularProgress color="inherit" />
-    <Typography style={{ marginTop: 20 }}>{backdropMessage}</Typography>
-</Backdrop>
-    </Grid>
+  
+        {/* Lista de keywords */}
+        {keywordPlans.map((keywordPlan) => (
+          <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
+            <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+              <Title>Keyword Plan: {keywordPlan.planName}</Title>
+              <Typography component="div" variant="subtitle1">
+                Descripción: {keywordPlan.description}
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Keyword</TableCell>
+                    <TableCell sx={{ width: '15%', textAlign: 'right' }}>Crear Títulos</TableCell>
+                    <TableCell sx={{ width: '15%', textAlign: 'right' }}>Edit</TableCell>
+                    <TableCell sx={{ width: '15%', textAlign: 'right' }}>Delete</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {keywordPlan.keywords.map((keyword, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {editingKeywordId === keyword.id ? (
+                          <TextField
+                            value={editingKeywordValue}
+                            onChange={(e) => setEditingKeywordValue(e.target.value)}
+                          />
+                        ) : (
+                          keyword.keyword
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <IconButton
+                          aria-label="create"
+                          color="primary"
+                          onClick={() => handleSingleTitleCreation(keywordPlan.id, keyword.id)}
+                        >
+                          <LightbulbIcon />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        {editingKeywordId === keyword.id ? (
+                          <IconButton
+                            aria-label="save"
+                            color="primary"
+                            onClick={() => handleSaveEditedKeyword(keywordPlan.id, keyword.id)}
+                          >
+                            <SaveIcon />
+                          </IconButton>
+                        ) : (
+                          <IconButton
+                            aria-label="edit"
+                            color="primary"
+                            onClick={() => handleEditKeywordStart(keyword.id, keyword.keyword)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <IconButton
+                          aria-label="delete"
+                          color="error"
+                          onClick={() => handleDeleteKeyword(keywordPlan.id, keyword.id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <BottomNavigation showLabels>
+                <BottomNavigationAction label="Agregar Keywords" icon={<AddIcon />} onClick={() => handleOpenAddKeywordModal(keywordPlan.id)} />
+                <BottomNavigationAction label="Crear Ideas de Títulos" icon={<TitleIcon />} onClick={() => handleTitleCreation(keywordPlan.id)} />
+                <BottomNavigationAction label="Borrar Keyword Plan" icon={<DeleteIcon />} onClick={() => handleDeleteKeywordPlan(keywordPlan.id)} />
+              </BottomNavigation>
+            </Paper>
+          </Grid>
+        ))}
+        <Backdrop open={isLoading} style={{ zIndex: 9999, color: '#fff', flexDirection: 'column' }}>
+          <CircularProgress color="inherit" />
+          <Typography style={{ marginTop: 20 }}>{backdropMessage}</Typography>
+        </Backdrop>
+      </Grid>
     </Layout>
-);
-
+  ); 
 }

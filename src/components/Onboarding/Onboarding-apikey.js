@@ -53,9 +53,12 @@ const Onboarding = () => {
       <Typography component="h2" variant="h5">
           PASO #1 Define los datos de tu cuenta
         </Typography>
+        <Typography component="p" variant="p">
+          Completa la mayor cantidad de datos que sea posible en este momento. Si no tienes los datos de tu API key de OpenAI recuerda que no te sera posible acceder a las funcionalidades de la aplicación.
+        </Typography>
       <AccountSettings 
-            //onSubmitSuccess={handleOnSubmitSuccess} 
-            submitButtonText="Guardar datos de la cuenta" 
+            onSubmitSuccess={handleOnSubmitSuccess} 
+            submitButtonText="Crear Cuenta" 
         />
         <Box
         sx={{
@@ -64,30 +67,8 @@ const Onboarding = () => {
      
         }}
       >
-        <Typography component="h2" variant="h5">
-          PASO #2 Agrega el API key de OpenAI
-        </Typography>
-        <Typography component="p">
-          Si no sabes como obtener el API key de Open AI te lo explicamos en este pequeño video:
-        </Typography>
-        {/* Video embebido de YouTube */}
-  <iframe 
-    width="100%" 
-    height="250" 
-    src="https://www.youtube.com/embed/ijyognnxgHo" 
-    title="YouTube video player" 
-    frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen>
-  </iframe>
-        <AccountAPI 
-            onSubmitSuccess={handleOnSubmitSuccess} 
-            submitButtonText="Iniciar con mi contenido" 
-        />
         </Box>
-        <Typography component="p">
-          Este paso es fundamental para poder usar el generador de contenido, si no tienes un API Key de OpenAI no lo podrás usar.
-        </Typography>
+        
       <Typography variant="body2" align="center" sx={{ mt: 8 }}>
         Copyright ©{' '}
         <a href="https://mui.com/" variant="inherit">

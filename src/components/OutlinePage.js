@@ -10,7 +10,7 @@ import Button from '@mui/material/Button';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 
 export default function OutlinePage() {
-  const { keywordPlanId, keywordId, titleId } = useParams();
+  const { titleId } = useParams();
   const [outline, setOutline] = useState(''); // Cambiado a outline
   const [isEditing, setIsEditing] = useState(false);
   const { currentUser } = useContext(AuthContext);
@@ -23,14 +23,12 @@ export default function OutlinePage() {
 
     const fetchOutline = async () => {
       try {
-        const db = getFirestore();
-        const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-        const titleDoc = await getDoc(titleRef);
-
-        if (titleDoc.exists()) {
-          setOutline(titleDoc.data().outline || ''); // Cambiado a outline
+        const response = await fetch(`http://localhost:8000/titles/${titleId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setOutline(data.title.outline || '');
         } else {
-          console.error('El título no existe.');
+          console.error('Error al cargar el outline:', response.statusText);
         }
       } catch (error) {
         console.error('Error al cargar el outline:', error);
@@ -38,29 +36,44 @@ export default function OutlinePage() {
     };
 
     fetchOutline();
-  }, [currentUser, keywordPlanId, keywordId, titleId]);
+  }, [currentUser, titleId]);
 
   const handleDeleteOutline = async () => {
     try {
-      const db = getFirestore();
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        outline: null // Cambiado a outline
+      const response = await fetch(`http://localhost:8000/titles/${titleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ outline: null }),
       });
-      setOutline(''); // Cambiado a outline
+
+      if (response.ok) {
+        setOutline('');
+      } else {
+        console.error('Error al eliminar el outline:', response.statusText);
+      }
     } catch (error) {
       console.error('Error al eliminar el outline:', error);
     }
   };
 
+
   const handleSaveEdit = async () => {
     try {
-      const db = getFirestore();
-      const titleRef = doc(db, 'keywordsplans', keywordPlanId, 'keywords', keywordId, 'titles', titleId);
-      await updateDoc(titleRef, {
-        outline: outline // Cambiado a outline
+      const response = await fetch(`http://localhost:8000/titles/${titleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ outline }),
       });
-      setIsEditing(false);
+
+      if (response.ok) {
+        setIsEditing(false);
+      } else {
+        console.error('Error al guardar el outline editado:', response.statusText);
+      }
     } catch (error) {
       console.error('Error al guardar el outline editado:', error);
     }

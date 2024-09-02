@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
@@ -13,129 +13,115 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Backdrop from '@mui/material/Backdrop';
-import BottomNavigation from '@mui/material/BottomNavigation';
-import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import OutlineIcon from '@mui/icons-material/List'; 
-import Modal from '@mui/material/Modal';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'; 
-import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Title from '../Titles/Title';
-import { collection, getFirestore, getDocs, getDoc, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../../AuthContext';
-import { CallOpenAIOutline, CallOpenAIContent } from '../OpenAI'; 
+import { CallOpenAIOutline, CallOpenAIContent } from '../OpenAI';
 import Layout from '../Layout/Layout';
-import CircularProgressWithLabel from './CircularProgressWithLabel';
-import { handleOutlineCreation as handleOutlineCreationHandler } from '../Handlers';
-import { handleContentCreation as handleContentCreationHandler } from '../Handlers';
-import { handleAllContentsCreation as handleAllContentsCreationHandler } from '../Handlers';
-import { handleAllOutlinesDelete as handleAllOutlinesDeleteHandler } from '../Handlers';
-import ConfirmationModal from './ConfirmationModal';
-
+import axios from 'axios';
 
 export default function ContentsDisplay() {
-  const [keywordPlans, setKeywordPlans] = useState([]);
+  const [titles, setTitles] = useState([]);
   const { currentUser } = useContext(AuthContext);
-  const [editedTitle, setEditedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
-  const [completedOutlines, setCompletedOutlines] = useState(0);
-  const [totalOutlines, setTotalOutlines] = useState(0);
-  const navigate = useNavigate();
-  const [cachedKeywordPlans, setCachedKeywordPlans] = useState(null);
-  const { keywordPlanId } = useParams(); 
-  const [value, setValue] = useState(0);
-  const [openModal, setOpenModal] = useState(false);
-const [actionToConfirm, setActionToConfirm] = useState(null);
-const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const { keywordPlanId } = useParams();
+  const itemsPerPage = 10;
+  const [page, setPage] = useState(0);
 
-  const loadKeywordPlans = async () => {
+  // Function to load titles for a specific keyword plan
+  const loadTitles = async () => {
     if (!currentUser || !keywordPlanId) {
-      console.error('Usuario no autenticado o keywordPlanId no proporcionado. No se pueden cargar los KeywordPlans.');
+      console.error('Usuario no autenticado o keywordPlanId no proporcionado. No se pueden cargar los Títulos.');
       return;
     }
 
     try {
-      if (cachedKeywordPlans) {
-        setKeywordPlans(cachedKeywordPlans);
-        return;
-      }
-      const db = getFirestore();
-      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-      const keywordPlanDoc = await getDoc(keywordPlanRef);
+      // Fetch titles for the given keyword plan
+      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}/titles`);
+      const titlesData = response.data.titles;
 
-      if (!keywordPlanDoc.exists()) {
-        console.error('El KeywordPlan no existe');
-        return;
-      }
-
-      const keywordsSnapshot = await getDocs(collection(keywordPlanRef, 'keywords'));
-      const keywords = [];
-      for (const keywordDoc of keywordsSnapshot.docs) {
-        const keywordData = {
-          id: keywordDoc.id,
-          ...keywordDoc.data()
-        };
-
-        const titlesSnapshot = await getDocs(collection(keywordDoc.ref, 'titles'));
-        keywordData.titles = titlesSnapshot.docs.map(titleDoc => ({
-          id: titleDoc.id,
-          ...titleDoc.data()
-        }));
-
-        keywords.push(keywordData);
-      }
-
-      const keywordPlan = {
-        id: keywordPlanDoc.id,
-        ...keywordPlanDoc.data(),
-        keywords
-      };
-
-      setCachedKeywordPlans([keywordPlan]);
-      setKeywordPlans([keywordPlan]);
+      setTitles(titlesData); // Update state with the fetched titles
     } catch (error) {
-      console.error('Error al cargar el KeywordPlan:', error);
+      console.error('Error al cargar los títulos:', error);
     }
   };
-
-
 
   useEffect(() => {
     if (!currentUser) {
-      console.error('Usuario no autenticado. No se pueden cargar los KeywordPlans.');
+      console.error('Usuario no autenticado. No se pueden cargar los Títulos.');
       return;
     }
-    if (cachedKeywordPlans) {
-      setKeywordPlans(cachedKeywordPlans);
-    } else {
-      loadKeywordPlans();
-    }
-  
-    loadKeywordPlans();
+    loadTitles(); // Load titles on component mount
   }, [currentUser]);
 
-  
+  // Function to handle outline creation
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
-    const userId = currentUser.uid;
-    await handleOutlineCreationHandler(keywordPlanId, keywordId, titleId, userId);
-  };
-  
-  
+    console.log('handleOutlineCreation', keywordPlanId, keywordId, titleId);
+    try {
+      const response = await fetch('http://localhost:8000/openai/create-outline', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+              keywordPlanId: Number(keywordPlanId), 
+              keywordId: Number(keywordId), 
+              titleId: Number(titleId) 
+          }),
+      });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Outline created successfully', result);
+            loadTitles(); // Reload to update outlines
+        } else {
+            console.error('Failed to create outline:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error creating outline:', error);
+    }
+};
+
+  // Function to handle content creation
   const handleContentCreation = async (keywordPlanId, keywordId, titleId) => {
-    await handleContentCreationHandler(keywordPlanId, keywordId, titleId, currentUser);
+    try {
+      setIsLoading(true);
+      setBackdropMessage('Creando contenido en segundo plano...');
+
+      const response = await axios.post('http://localhost:8000/openai/create-content', {
+        userId: currentUser.uid,
+        keywordPlanId: Number(keywordPlanId),
+        keywordId: Number(keywordId),
+        titleId: Number(titleId),
+      });
+
+      if (response.status === 200) {
+        console.log('Datos recibidos correctamente. El contenido se está procesando en segundo plano.');
+        setBackdropMessage('El contenido se está creando en segundo plano. Por favor, espera un momento.');
+        // Aquí podrías establecer un temporizador o un polling para verificar si el contenido ha sido creado
+      } else {
+        console.error('Error inesperado al crear contenido:', response.statusText);
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error creando contenido:', error);
+      setBackdropMessage('Error al intentar crear el contenido.');
+      setIsLoading(false);
+    }
   };
 
+  // Function to handle all content creation for a keyword plan
   const handleAllContentsCreation = async (keywordPlanId) => {
     try {
       setIsLoading(true);
       setBackdropMessage('Marcando la creación de todos los Contenidos...');
-  
-      const db = getFirestore();
-      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-      await updateDoc(keywordPlanRef, {
-        All_Content_Creation: true
+
+      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+        allcontentcreation: true,
       });
-  
+
       console.log('All_Content_Creation marcado como True');
       setIsLoading(false);
       setBackdropMessage('');
@@ -145,18 +131,17 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
       setBackdropMessage('Error al marcar All_Content_Creation');
     }
   };
-  
+
+  // Function to handle all outline creation for a keyword plan
   const handleAllOutlinesCreation = async (keywordPlanId) => {
     try {
       setIsLoading(true);
       setBackdropMessage('Marcando la creación de todos los Outlines...');
-  
-      const db = getFirestore();
-      const keywordPlanRef = doc(db, 'keywordsplans', keywordPlanId);
-      await updateDoc(keywordPlanRef, {
-        All_Outline_Creation: true
+
+      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+        alloutlinecreation: true,
       });
-  
+
       console.log('All_Outline_Creation marcado como True');
       setIsLoading(false);
       setBackdropMessage('');
@@ -167,188 +152,80 @@ const [openDeleteModal, setOpenDeleteModal] = useState(false);
     }
   };
 
-const handleAllOutlinesDelete = async (keywordPlanId) => {
-  try {
-    setIsLoading(true);
-    setBackdropMessage('Borrando todos los Outlines...');
-
-    const result = await handleAllOutlinesDeleteHandler(keywordPlanId, keywordPlans);
-
-    if (result.status === 'ok') {
-      setBackdropMessage('Tus outlines han sido borrados exitosamente');
-      setTimeout(() => {
-        setBackdropMessage('');
-        setIsLoading(false);
-      }, 5000);
-    } else {
-      setBackdropMessage(result.message);
-      setIsLoading(false);
-    }
-  } catch (error) {
-    console.error('Error al borrar todos los outlines:', error);
-    setBackdropMessage('Error al borrar los outlines');
-    setIsLoading(false);
-  }
-};
-  
-
   const wrapTextStyle = {
-    maxWidth: '150px', // Puedes ajustar este valor según tus necesidades
+    maxWidth: '150px', // You can adjust this value as needed
     whiteSpace: 'normal',
-    maxHeight: '60px', // Ajusta según tus necesidades
-    overflow: 'auto'   // Esto agregará barras de desplazamiento si el contenido excede el maxHeight
-  };
-  const inputStyle = {
-    width: '100%',
-    padding: '5px',
-    boxSizing: 'border-box',
-    border: '1px solid #ccc',
-    borderRadius: '4px'
+    maxHeight: '60px', // Adjust according to your needs
+    overflow: 'auto',  // Adds scrollbars if content exceeds maxHeight
   };
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 400,
-    bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
-    p: 4,
-  };
-
-  const [modalProps, setModalProps] = useState({
-    open: false,
-    title: '',
-    description: '',
-    onConfirm: null,
-  });
-
-  const handleOpenModal = (title, description, onConfirm) => {
-    setModalProps({
-      open: true,
-      title,
-      description,
-      onConfirm,
-    });
-  };
-
-  const handleCloseModal = () => {
-    setModalProps({ ...modalProps, open: false });
-  };
-  
-  
-  const handleConfirmAction = () => {
-    if (typeof modalProps.onConfirm === 'function') {
-      modalProps.onConfirm(); // La función se ejecutará aquí después de la confirmación
-      handleCloseModal(); // Cierra el modal después de confirmar
-    } else {
-      console.error('onConfirm is not a function', modalProps.onConfirm);
-    }
-  };
-  
   return (
     <Layout>
-    <Grid item xs={12}>
-      {keywordPlans.map((keywordPlan) => (
-        <Grid item xs={12} key={keywordPlan.id} sx={{ pb: 2 }}>
+      <Grid item xs={12}>
+        <Grid item xs={12} sx={{ pb: 2 }}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Title>Plan de Contenido: {keywordPlan.planName}</Title>
-            <Button onClick={() => handleAllOutlinesCreation(keywordPlan.id)}>Crear todos los Outlines</Button>
-            <Button onClick={() => handleAllContentsCreation(keywordPlan.id)}>Crear todos los Contenidos</Button>
+            <Title>Plan de Contenido ID: {keywordPlanId}</Title>
+            <Button onClick={() => handleAllOutlinesCreation(keywordPlanId)}>Crear todos los Outlines</Button>
+            <Button onClick={() => handleAllContentsCreation(keywordPlanId)}>Crear todos los Contenidos</Button>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
-                  <TableCell>Keyword</TableCell>
+                  <TableCell>Keyword ID</TableCell>
                   <TableCell sx={{ width: '15%', textAlign: 'right' }}>Outline</TableCell>
                   <TableCell sx={{ width: '15%', textAlign: 'right' }}>Contenido</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {keywordPlan.keywords.map((keyword) => 
-                  keyword.titles.map((title, index) => (
-                    <TableRow key={index}>
-                      <TableCell style={wrapTextStyle}>
-                        {title.title}
-                      </TableCell>
-                      <TableCell>{keyword.keyword}</TableCell>
-                      <TableCell sx={{ width: '15%', textAlign: 'right' }}>
-                      { (title.outline && title.outline !== "") ? (
-                          <Link to={`/outline/${keywordPlan.id}/${keyword.id}/${title.id}`} target="_blank">
-                            <IconButton color="success">
-                              <DoneIcon />
-                            </IconButton>
-                          </Link>
-                        ) : (
-                          <IconButton color="primary" onClick={() => handleOutlineCreation(keywordPlan.id, keyword.id, title.id)}>
-                            <AddIcon />
+                {titles.slice(page * itemsPerPage, (page + 1) * itemsPerPage).map((title, index) => (
+                  <TableRow key={index}>
+                    <TableCell style={wrapTextStyle}>
+                      {title.title}
+                    </TableCell>
+                    <TableCell>{title.keywordId}</TableCell>
+                    <TableCell sx={{ width: '15%', textAlign: 'right' }}>
+                      {(title.outline && title.outline !== "") ? (
+                        <Link to={`/outline/${title.id}`} target="_blank">
+                          <IconButton color="success">
+                            <DoneIcon />
                           </IconButton>
-                        )}
-                      </TableCell>   
-                      <TableCell sx={{ width: '15%', textAlign: 'right' }}>
-                        {title.contentId ? (
-                          <Link to={`/contenidos/${title.contentId}`} target="_blank">
-                            <IconButton color="success">
-                              <DoneIcon />
-                            </IconButton>
-                          </Link>
-                        ) : (
-                          <IconButton color="primary" onClick={() => handleContentCreation(keywordPlan.id, keyword.id, title.id)}>
-                            <AddIcon />
+                        </Link>
+                      ) : (
+                        <IconButton color="primary" onClick={() => handleOutlineCreation(keywordPlanId, title.keywordId, title.id)}>
+                          <AddIcon />
+                        </IconButton>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ width: '15%', textAlign: 'right' }}>
+                      {title.contentid ? (
+                        <Link to={`/contenidos/${title.contentid}`} target="_blank">
+                          <IconButton color="success">
+                            <DoneIcon />
                           </IconButton>
-                        )}
-                      </TableCell>   
-                    </TableRow>
-                  ))
-                )}
+                        </Link>
+                      ) : (
+                        <IconButton color="primary" onClick={() => handleContentCreation(keywordPlanId, title.keywordId, title.id)}>
+                          <AddIcon />
+                        </IconButton>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-            <BottomNavigation
-          showLabels
-          value={value}
-          onChange={(event, newValue) => {
-            setValue(newValue);
-          }}
-        >
-          <BottomNavigationAction 
-            label="Crear Outlines" 
-            icon={<OutlineIcon />} 
-            onClick={() => handleOpenModal('Confirmación', 'Estás a punto de generar gran cantidad de contenidos. Este proceso puede demorar varias horas y costar dinero. ¿Estás seguro de que deseas continuar?', () => handleAllOutlinesCreation(keywordPlan.id))}
-            />
-          <BottomNavigationAction 
-            label="Borrar todos los Outlines" 
-            icon={<ContentCopyIcon />} 
-            onClick={() => handleOpenModal('Confirmación de Eliminación', 'Vas a borrar todos tus outlines, ¿deseas continuar?', () => handleAllOutlinesDelete(keywordPlan.id))}
-            />
-          <BottomNavigationAction 
-            label="Crear Contenidos" 
-            icon={<ContentCopyIcon />} 
-            onClick={() => handleOpenModal('Confirmación', 'Estás a punto de generar gran cantidad de contenidos. Este proceso puede demorar varias horas y costar dinero. ¿Estás seguro de que deseas continuar?', () => handleAllContentsCreation(keywordPlan.id))}
-            />
-        </BottomNavigation>
+            <Button onClick={() => setPage(page + 1)}>Cargar más</Button>
           </Paper>
         </Grid>
-      ))}
-      <Backdrop
-  open={isLoading}
-  sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
->
-  <CircularProgressWithLabel value={(completedOutlines / totalOutlines) * 100} />
-  <Typography variant="h6" component="div" sx={{ paddingLeft: 2 }}>
-    {backdropMessage}
-  </Typography>
-</Backdrop>
-    </Grid>
-    <ConfirmationModal
-      open={modalProps.open}
-      title={modalProps.title}
-      description={modalProps.description}
-      onConfirm={handleConfirmAction}
-      onClose={handleCloseModal}
-    />
+        <Backdrop
+          open={isLoading}
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        >
+          <CircularProgress />
+          <Typography variant="h6" component="div" sx={{ paddingLeft: 2 }}>
+            {backdropMessage}
+          </Typography>
+        </Backdrop>
+      </Grid>
     </Layout>
-    
   );
 }

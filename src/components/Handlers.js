@@ -7,7 +7,7 @@ export const handleOutlineCreation = async (keywordPlanId, keywordId, titleId, u
   try {
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    const response = await fetch(`${apiUrl}/createoutline?keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}&userId=${userId}`, {
+    const response = await fetch(`${apiUrl}/openai/createoutline?keywordPlanId=${keywordPlanId}&keywordId=${keywordId}&titleId=${titleId}&userId=${userId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

@@ -51,10 +51,9 @@ function App() {
           <Route path="/titles/:keywordPlanId" element={<TitlesDisplay />} />
           <Route path="/contents/:keywordPlanId" element={<ContentsDisplay />} />
           <Route path="/publish/:keywordPlanId" element={<PublishDisplay />} />
-          <Route path="/contenidos/:contentId" element={<ContenidosPage />} />
           <Route path="/keywords/:keywordPlanId" element={<KeywordsDisplay />} />
-          <Route path="/content/:keywordPlanId/:keywordId/:titleId" element={<ContentPage />} />
-          <Route path="/outline/:keywordPlanId/:keywordId/:titleId" element={<OutlinePage />} />
+          <Route path="/contenidos/:contentId" element={<ContentPage />} />
+          <Route path="/outline/:titleId" element={<OutlinePage />} />
         </Routes>
       </div>
     </Router>
