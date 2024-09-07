@@ -113,9 +113,12 @@ export default function PublishDisplay() {
   
   const handleContentPublishing = async (contentId) => {
     try {
+      console.log(`Iniciando publicación de contenido con ID: ${contentId}`);
+
       // Obtener los datos del negocio desde el backend
       const businessResponse = await axios.get(`http://localhost:8000/business/${currentUser.uid}`);
       const businessData = businessResponse.data.business;
+      console.log('Datos de negocio:', businessData);
   
       // Verificar si los datos de WordPress existen
       if (!businessData.wpWebsiteUrl || !businessData.wpUsername || !businessData.wpAppPassword) {
@@ -123,15 +126,16 @@ export default function PublishDisplay() {
         return;
       }
   
-      // Obtener el título y el contenido desde el backend (en lugar de Firebase)
+      // Obtener el título y el contenido desde el backend
       const contentResponse = await axios.get(`http://localhost:8000/contents/${contentId}`);
       const contentData = contentResponse.data.content;
+      console.log('Datos del contenido:', contentData);
   
-      const title = contentData.title;
+      const title = contentData.contenttitle;
       const content = contentData.content;
       const categoryId = contentData.category;
   
-      // Configuración para la API de WordPress usando los datos del negocio obtenidos desde el backend
+      // Configuración para la API de WordPress
       const url = `${businessData.wpWebsiteUrl}wp-json/wp/v2/posts`;
       const username = businessData.wpUsername;
       const password = businessData.wpAppPassword;
@@ -147,6 +151,8 @@ export default function PublishDisplay() {
         status: 'publish',
         categories: [categoryId],
       };
+  
+      console.log('Datos para la API de WordPress:', data);
   
       // Publicar el contenido en WordPress
       const response = await axios.post(url, data, { headers: headers });
@@ -168,23 +174,22 @@ export default function PublishDisplay() {
       setBackdropMessage('Publicando contenidos...');
       setPublishedContents(0);
       setTotalContents(contents.length);
-
+  
       for (const content of contents) {
-        await handleContentPublishing(content.id);
-        setPublishedContents((prev) => prev + 1);
+        // Solo procesar aquellos contenidos que no tienen una URL publicada
+        if (!content.published) {
+          await handleContentPublishing(content.id);
+          setPublishedContents((prev) => prev + 1);
+        }
       }
-
+  
       setIsLoading(false);
-      setBackdropMessage('Todos los contenidos han sido publicados con éxito.');
+      setBackdropMessage('Todos los contenidos no publicados han sido publicados con éxito.');
     } catch (error) {
-      console.error('Error al publicar todos los contenidos:', error);
+      console.error('Error al publicar los contenidos:', error);
       setIsLoading(false);
     }
   };
-  
-
-
-  
 
 
   const handleContentDeletion = async (contentId) => {
@@ -200,8 +205,6 @@ const handleAllContentsCategory = async () => {
   setShowCategoryModal(true);
 };
 
-  
-
   const wrapTextStyle = {
     maxWidth: '150px', // Puedes ajustar este valor según tus necesidades
     whiteSpace: 'normal',
@@ -215,8 +218,6 @@ const handleAllContentsCategory = async () => {
     border: '1px solid #ccc',
     borderRadius: '4px'
   };
-  
-  
 
   return (
     <Layout>
@@ -227,45 +228,65 @@ const handleAllContentsCategory = async () => {
             <Button onClick={() => handleAllContentsCategory()}>Agregar Categoría a todos los contenidos</Button>
             <Button onClick={() => handleAllContentsPublishing()}>Publicar todos los contenidos</Button>
             <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Número de palabras</TableCell>
-                  <TableCell>Categoría</TableCell>
-                  <TableCell>Publicar</TableCell>
-                  <TableCell>Eliminar</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {contents.map((content, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Link to={`/contenidos/${content.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                        {content.contenttitle}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{countWordsInHtml(content.content)}</TableCell>
-                    <TableCell>{content.category}</TableCell>
-                    <TableCell>
-                      {content.published ? (
-                        <IconButton color="success">
-                          <DoneIcon />
-                        </IconButton>
-                      ) : (
-                        <IconButton color="primary" onClick={() => handleContentPublishing(content.id)}>
-                          <PublishIcon />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton color="error" onClick={() => handleContentDeletion(content.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+  <TableHead>
+    <TableRow>
+      <TableCell>Title</TableCell>
+      <TableCell>Número de palabras</TableCell>
+      <TableCell>Categoría</TableCell>
+      <TableCell>Publicado</TableCell> {/* Nueva columna para el link */}
+      <TableCell>Publicar</TableCell>
+      <TableCell>Eliminar</TableCell>
+    </TableRow>
+  </TableHead>
+  <TableBody>
+    {contents.map((content, index) => (
+      <TableRow key={index}>
+        <TableCell>
+          <Link to={`/contenidos/${content.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            {content.contenttitle}
+          </Link>
+        </TableCell>
+        <TableCell>{countWordsInHtml(content.content)}</TableCell>
+        <TableCell>{content.category}</TableCell>
+        
+        {/* Columna con el icono y enlace al contenido publicado */}
+        <TableCell>
+          {content.published ? (
+            <IconButton
+              component="a"
+              href={content.published}
+              target="_blank"
+              rel="noopener noreferrer"
+              color="primary"
+            >
+              <DoneIcon />
+            </IconButton>
+          ) : (
+            <Typography variant="body2" color="textSecondary">No publicado</Typography>
+          )}
+        </TableCell>
+
+        <TableCell>
+          {content.published ? (
+            <IconButton color="success">
+              <DoneIcon />
+            </IconButton>
+          ) : (
+            <IconButton color="primary" onClick={() => handleContentPublishing(content.id)}>
+              <PublishIcon />
+            </IconButton>
+          )}
+        </TableCell>
+        
+        <TableCell>
+          <IconButton color="error" onClick={() => handleContentDeletion(content.id)}>
+            <DeleteIcon />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
           </Paper>
         </Grid>
       </Grid>
