@@ -14,6 +14,8 @@ export default function ContentPage() {
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const { currentUser } = useContext(AuthContext);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -24,7 +26,7 @@ export default function ContentPage() {
     const fetchContent = async () => {
       try {
         // Obtener el contenido directamente usando el contentId
-        const contentResponse = await axios.get(`http://localhost:8000/contents/${contentId}`);
+        const contentResponse = await axios.get(`${backendUrl}/contents/${contentId}`);
         setContent(contentResponse.data.content.content || '');
       } catch (error) {
         console.error('Error al cargar el contenido:', error);
@@ -37,7 +39,7 @@ export default function ContentPage() {
   const handleDeleteContent = async () => {
     try {
       // Eliminar el contenido directamente
-      await axios.delete(`http://localhost:8000/contents/${contentId}`);
+      await axios.delete(`${backendUrl}/contents/${contentId}`);
       setContent('');  // Limpiar el estado después de eliminar el contenido
     } catch (error) {
       console.error('Error al eliminar el contenido:', error);
@@ -47,7 +49,7 @@ export default function ContentPage() {
   const handleSaveEdit = async () => {
     try {
       // Actualizar el contenido en la tabla `contents`
-      await axios.put(`http://localhost:8000/contents/${contentId}`, {
+      await axios.put(`${backendUrl}/contents/${contentId}`, {
         content
       });
       setIsEditing(false);  // Salir del modo de edición

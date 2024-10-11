@@ -10,6 +10,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios'; // Usar axios para llamadas a la API
 import { AuthContext } from '../../AuthContext';
 
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
+console.log('Variables de entorno:', process.env);
+
+
+
 export default function BuyerPersonasCreate() {
   const [formData, setFormData] = useState({
     name: '',
@@ -19,6 +24,7 @@ export default function BuyerPersonasCreate() {
     language: '',
     maxCharsInTitle: '',
   });
+
 
   const [isFormVisible, setIsFormVisible] = useState(false);
 
@@ -61,7 +67,7 @@ export default function BuyerPersonasCreate() {
       };
 
       // Hacer una solicitud POST a la API para crear el Buyer Persona
-      const response = await axios.post('http://localhost:8000/buyerpersona', buyerPersonaData);
+      const response = await axios.post(`${backendUrl}/buyerpersona`, buyerPersonaData);
 
       console.log('Buyer Persona creado exitosamente:', response.data);
 

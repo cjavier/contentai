@@ -16,6 +16,8 @@ export default function KeywordPlanDisplay({ linkType }) {
   const { currentUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -26,7 +28,7 @@ export default function KeywordPlanDisplay({ linkType }) {
     const loadKeywordPlans = async () => {
       try {
         // Obtener keyword plans del usuario actual, incluyendo los datos del buyer persona
-        const response = await axios.get(`http://localhost:8000/keywordplans/user/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/keywordplans/user/${currentUser.uid}`);
         const keywordPlansData = response.data.keywordPlans.sort((a, b) => a.planName.localeCompare(b.planName));
         setKeywordPlans(keywordPlansData);
       } catch (error) {

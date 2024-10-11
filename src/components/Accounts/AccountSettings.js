@@ -23,13 +23,15 @@ export default function AccountSettings({ onSubmitSuccess, submitButtonText = "A
   });
 
   const { currentUser } = useContext(AuthContext);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) return;
 
     const loadBusinessData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/business/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/business/${currentUser.uid}`);
         const businessData = response.data.business; // Accede a la propiedad business
         console.log('Business Data:', businessData); // Verifica los datos
         setFormData({
@@ -109,11 +111,11 @@ export default function AccountSettings({ onSubmitSuccess, submitButtonText = "A
 
       if (formData.id) {
         // Si hay un ID, actualiza el negocio existente
-        await axios.put(`http://localhost:8000/businesses/${formData.id}`, businessData);
+        await axios.put(`${backendUrl}/businesses/${formData.id}`, businessData);
         console.log('Datos de Business actualizados exitosamente.');
       } else {
         // Si no hay un ID, crea un nuevo negocio
-        const response = await axios.post('http://localhost:8000/businesses', businessData);
+        const response = await axios.post(`${backendUrl}/businesses`, businessData);
         console.log('Negocio creado exitosamente.');
         // Actualiza el estado con el ID del nuevo negocio creado
         setFormData({

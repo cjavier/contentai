@@ -15,6 +15,8 @@ export default function TitlePlanDisplay({ linkType }) {
   const { currentUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -28,7 +30,7 @@ export default function TitlePlanDisplay({ linkType }) {
         setBackdropMessage('Cargando planes de palabras clave...');
         
         // Fetch keyword plans associated with the current user
-        const response = await axios.get(`http://localhost:8000/keywordplans/user/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/keywordplans/user/${currentUser.uid}`);
         const keywordPlansData = response.data.keywordPlans.sort((a, b) => a.planName.localeCompare(b.planName));
         
         setKeywordPlans(keywordPlansData);

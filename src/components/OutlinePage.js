@@ -14,6 +14,7 @@ export default function OutlinePage() {
   const [outline, setOutline] = useState(''); // Cambiado a outline
   const [isEditing, setIsEditing] = useState(false);
   const { currentUser } = useContext(AuthContext);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     if (!currentUser) {
@@ -23,7 +24,7 @@ export default function OutlinePage() {
 
     const fetchOutline = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/titles/${titleId}`);
+        const response = await fetch(`${backendUrl}/titles/${titleId}`);
         if (response.ok) {
           const data = await response.json();
           setOutline(data.title.outline || '');
@@ -40,7 +41,7 @@ export default function OutlinePage() {
 
   const handleDeleteOutline = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/titles/${titleId}`, {
+      const response = await fetch(`${backendUrl}/titles/${titleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +62,7 @@ export default function OutlinePage() {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/titles/${titleId}`, {
+      const response = await fetch(`${backendUrl}/titles/${titleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

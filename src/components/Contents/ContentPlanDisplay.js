@@ -15,6 +15,8 @@ export default function ContentPlanDisplay({ linkType }) {
   const { currentUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -25,7 +27,7 @@ export default function ContentPlanDisplay({ linkType }) {
     const loadKeywordPlans = async () => {
       try {
         // Fetch keyword plans associated with the current user
-        const response = await axios.get(`http://localhost:8000/keywordplans/user/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/keywordplans/user/${currentUser.uid}`);
         const keywordPlansData = response.data.keywordPlans.sort((a, b) => a.planName.localeCompare(b.planName));
         setKeywordPlans(keywordPlansData);
       } catch (error) {
@@ -41,7 +43,7 @@ export default function ContentPlanDisplay({ linkType }) {
     setBackdropMessage('Programando los Outlines para creación, puedes cerrar el navegador, los outlines se crearán en segundo plano, vuelve más tarde');
   
     try {
-      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+      await axios.put(`${backendUrl}/keywordplans/${keywordPlanId}`, {
         alloutlinecreation: true
       });
   
@@ -63,7 +65,7 @@ export default function ContentPlanDisplay({ linkType }) {
     setBackdropMessage('Programando los Contenidos para creación, puedes cerrar el navegador, los contenidos se crearán en segundo plano, vuelve más tarde');
   
     try {
-      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+      await axios.put(`${backendUrl}/keywordplans/${keywordPlanId}`, {
         allcontentcreation: true
       });
   

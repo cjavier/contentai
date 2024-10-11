@@ -16,7 +16,6 @@ import Backdrop from '@mui/material/Backdrop';
 import CircularProgress from '@mui/material/CircularProgress';
 import Title from '../Titles/Title';
 import { AuthContext } from '../../AuthContext';
-import { CallOpenAIOutline, CallOpenAIContent } from '../OpenAI';
 import Layout from '../Layout/Layout';
 import axios from 'axios';
 
@@ -26,8 +25,7 @@ export default function ContentsDisplay() {
   const [isLoading, setIsLoading] = useState(false);
   const [backdropMessage, setBackdropMessage] = useState('');
   const { keywordPlanId } = useParams();
-  const itemsPerPage = 10;
-  const [page, setPage] = useState(0);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Function to load titles for a specific keyword plan
   const loadTitles = async () => {
@@ -38,8 +36,19 @@ export default function ContentsDisplay() {
 
     try {
       // Fetch titles for the given keyword plan
-      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}/titles`);
+      const response = await axios.get(`${backendUrl}/keywordplans/${keywordPlanId}/titles`);
       const titlesData = response.data.titles;
+
+      // Sort titles so that those with content or outline come first
+      titlesData.sort((a, b) => {
+        if ((a.contentid || a.outline) && !(b.contentid || b.outline)) {
+          return -1;
+        }
+        if (!(a.contentid || a.outline) && (b.contentid || b.outline)) {
+          return 1;
+        }
+        return 0;
+      });
 
       setTitles(titlesData); // Update state with the fetched titles
     } catch (error) {
@@ -59,7 +68,7 @@ export default function ContentsDisplay() {
   const handleOutlineCreation = async (keywordPlanId, keywordId, titleId) => {
     console.log('handleOutlineCreation', keywordPlanId, keywordId, titleId);
     try {
-      const response = await fetch('http://localhost:8000/openai/create-outline', {
+      const response = await fetch(`${backendUrl}/openai/create-outline`, {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -89,7 +98,7 @@ export default function ContentsDisplay() {
       setIsLoading(true);
       setBackdropMessage('Creando contenido en segundo plano...');
 
-      const response = await axios.post('http://localhost:8000/openai/create-content', {
+      const response = await axios.post(`${backendUrl}/openai/create-content`, {
         userId: currentUser.uid,
         keywordPlanId: Number(keywordPlanId),
         keywordId: Number(keywordId),
@@ -118,7 +127,7 @@ export default function ContentsDisplay() {
       setIsLoading(true);
       setBackdropMessage('Marcando la creación de todos los Contenidos...');
 
-      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+      await axios.put(`${backendUrl}/keywordplans/${keywordPlanId}`, {
         allcontentcreation: true,
       });
 
@@ -138,7 +147,7 @@ export default function ContentsDisplay() {
       setIsLoading(true);
       setBackdropMessage('Marcando la creación de todos los Outlines...');
 
-      await axios.put(`http://localhost:8000/keywordplans/${keywordPlanId}`, {
+      await axios.put(`${backendUrl}/keywordplans/${keywordPlanId}`, {
         alloutlinecreation: true,
       });
 
@@ -177,7 +186,7 @@ export default function ContentsDisplay() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {titles.slice(page * itemsPerPage, (page + 1) * itemsPerPage).map((title, index) => (
+                {titles.map((title, index) => (
                   <TableRow key={index}>
                     <TableCell style={wrapTextStyle}>
                       {title.title}
@@ -213,7 +222,6 @@ export default function ContentsDisplay() {
                 ))}
               </TableBody>
             </Table>
-            <Button onClick={() => setPage(page + 1)}>Cargar más</Button>
           </Paper>
         </Grid>
         <Backdrop

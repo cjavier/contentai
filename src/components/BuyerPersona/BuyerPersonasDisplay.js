@@ -21,6 +21,8 @@ export default function BuyerPersonasDisplay() {
   const [modalOpen, setModalOpen] = useState(false);
   const [contentPrompt, setContentPrompt] = useState('');
   const [promptType, setPromptType] = useState(null);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -31,7 +33,7 @@ export default function BuyerPersonasDisplay() {
     const loadBuyerPersonas = async () => {
       try {
         // Usar axios para obtener los Buyer Personas asignados al usuario actual
-        const response = await axios.get(`http://localhost:8000/buyerpersonas/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/buyerpersonas/${currentUser.uid}`);
         setBuyerPersonas(response.data);
       } catch (error) {
         console.error('Error al cargar los Buyer Personas:', error);
@@ -84,7 +86,7 @@ export default function BuyerPersonasDisplay() {
         }
 
         // Usar axios para actualizar el prompt específico del Buyer Persona
-        await axios.put(`http://localhost:8000/buyerpersona/${editingBuyerPersonaId}`, updatedContent);
+        await axios.put(`${backendUrl}/buyerpersona/${editingBuyerPersonaId}`, updatedContent);
 
         // Actualizar el estado local
         setBuyerPersonas((prevBuyerPersonas) =>
@@ -108,7 +110,7 @@ export default function BuyerPersonasDisplay() {
   const handleDeleteBuyerPersona = async (buyerPersonaId) => {
     try {
       // Usar axios para eliminar el Buyer Persona
-      await axios.delete(`http://localhost:8000/buyerpersona/${buyerPersonaId}`);
+      await axios.delete(`${backendUrl}/buyerpersona/${buyerPersonaId}`);
 
       console.log('Buyer Persona eliminado exitosamente.');
 
@@ -130,7 +132,7 @@ export default function BuyerPersonasDisplay() {
       };
   
       // Usar axios para actualizar el Buyer Persona
-      await axios.put(`http://localhost:8000/buyerpersona/${buyerPersonaId}`, updatedData);
+      await axios.put(`${backendUrl}/buyerpersona/${buyerPersonaId}`, updatedData);
   
       // Actualizar el estado local
       setBuyerPersonas((prevBuyerPersonas) =>

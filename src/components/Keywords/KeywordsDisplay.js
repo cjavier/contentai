@@ -44,6 +44,8 @@ export default function KeywordsDisplay() {
   const [newKeywords, setNewKeywords] = useState('');
   const [editingKeywordId, setEditingKeywordId] = useState(null);
   const [editingKeywordValue, setEditingKeywordValue] = useState('');
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -54,7 +56,7 @@ export default function KeywordsDisplay() {
     const loadKeywordPlans = async () => {
       try {
         // Obtener el keyword plan específico y sus keywords
-        const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+        const response = await axios.get(`${backendUrl}/keywordplans/${keywordPlanId}`);
         const keywordPlan = response.data.keywordPlan;
 
         setKeywordPlans([keywordPlan]); // Establecer el estado con un array que contiene solo este KeywordPlan
@@ -96,7 +98,7 @@ export default function KeywordsDisplay() {
 
       // Agregar keywords al KeywordPlan
       const keywordsArray = newKeywords.split('\n');
-      await axios.post(`http://localhost:8000/keywords`, {
+      await axios.post(`${backendUrl}/keywords`, {
         keywordPlanId: selectedKeywordPlan,
         keywords: keywordsArray,
       });
@@ -108,7 +110,7 @@ export default function KeywordsDisplay() {
       setIsAddKeywordModalVisible(false);
 
       // Actualizar el estado recargando los KeywordPlans
-      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+      const response = await axios.get(`${backendUrl}/keywordplans/${keywordPlanId}`);
       const keywordPlan = response.data.keywordPlan;
       setKeywordPlans([keywordPlan]);
     } catch (error) {
@@ -119,7 +121,7 @@ export default function KeywordsDisplay() {
   const handleDeleteKeywordPlan = async (keywordPlanId) => {
     try {
       // Eliminar el KeywordPlan
-      await axios.delete(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+      await axios.delete(`${backendUrl}/keywordplans/${keywordPlanId}`);
 
       console.log('KeywordPlan eliminado exitosamente.');
 
@@ -140,12 +142,12 @@ export default function KeywordsDisplay() {
       }
 
       // Eliminar la keyword
-      await axios.delete(`http://localhost:8000/keywords/${keywordId}`);
+      await axios.delete(`${backendUrl}/keywords/${keywordId}`);
 
       console.log('Keyword eliminada exitosamente.');
 
       // Actualizar el estado recargando los KeywordPlans
-      const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}`);
+      const response = await axios.get(`${backendUrl}/keywordplans/${keywordPlanId}`);
       const keywordPlan = response.data.keywordPlan;
       setKeywordPlans([keywordPlan]);
     } catch (error) {
@@ -173,7 +175,7 @@ export default function KeywordsDisplay() {
 
         const titleIdeas = await CallOpenAITitle(keyword.keyword, keywordPlan.titlePrompt, currentUser.uid);
 
-        await axios.post(`http://localhost:8000/titles`, {
+        await axios.post(`${backendUrl}/titles`, {
           keywordId: keyword.id,
           keywordplanid: keywordPlanId,
           titles: titleIdeas
@@ -208,7 +210,7 @@ export default function KeywordsDisplay() {
       const titleIdeas = await CallOpenAITitle(keyword.keyword, keywordPlan.titlePrompt, currentUser.uid);
 
       // Guardar cada título generado en el backend
-      await axios.post(`http://localhost:8000/titles`, {
+      await axios.post(`${backendUrl}/titles`, {
         keywordId: keyword.id,
         keywordplanid: keywordPlanId,
         titles: titleIdeas
@@ -233,7 +235,7 @@ export default function KeywordsDisplay() {
   const handleSaveEditedKeyword = async (keywordPlanId, keywordId) => {
     try {
       // Actualizar la keyword en el backend
-      await axios.put(`http://localhost:8000/keywords/${keywordId}`,
+      await axios.put(`${backendUrl}/keywords/${keywordId}`,
         { keyword: editingKeywordValue });
         // Actualizar el estado local
   setKeywordPlans((prevKeywordPlans) =>

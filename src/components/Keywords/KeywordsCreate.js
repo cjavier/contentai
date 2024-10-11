@@ -18,7 +18,7 @@ export default function KeywordsCreate() {
   const [description, setDescription] = useState(''); // Estado para la descripción
   const [buyerPersonas, setBuyerPersonas] = useState([]); // Estado para almacenar los buyer personas
   const [selectedBuyerPersona, setSelectedBuyerPersona] = useState(''); // Estado para el buyer persona seleccionado
-
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
   const { currentUser } = useContext(AuthContext);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function KeywordsCreate() {
         }
 
         // Obtener los buyer personas asociados al usuario actual
-        const response = await axios.get(`http://localhost:8000/buyerpersonas/${currentUser.uid}`);
+        const response = await axios.get(`${backendUrl}/buyerpersonas/${currentUser.uid}`);
         setBuyerPersonas(response.data);
 
       } catch (error) {
@@ -75,7 +75,7 @@ export default function KeywordsCreate() {
       };
 
       // Usar axios para enviar la solicitud POST al endpoint de creación de KeywordPlan
-      const response = await axios.post('http://localhost:8000/keywordplan', keywordsPlanData);
+      const response = await axios.post(`${backendUrl}/keywordplan`, keywordsPlanData);
 
       console.log('KeywordsPlan creado exitosamente:', response.data);
 

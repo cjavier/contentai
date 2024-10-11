@@ -1,50 +1,46 @@
 import { collection, getFirestore, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import axios from 'axios';
 
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 //const apiKey = "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"; // Reemplaza "TU_API_KEY_AQUI" con tu clave API real
 const getOpenAIConfig = async (userId) => {
-  const db = getFirestore();
-  const businessCollection = collection(db, 'Business');
-  const q = query(businessCollection, where('userId', '==', userId));
-
   try {
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-          const businessData = querySnapshot.docs[0].data();
-          return {
-              openaiKey: businessData.openaikey,
-              openaiModel: businessData.openaiModel // Retrieve the OpenAI model preference
-          };
-      } else {
-          console.error('No se encontró un documento con ese userId.');
-          return null;
-      }
-  } catch (error) {
-      console.error('Error al obtener la configuración de OpenAI:', error);
+    const response = await axios.get(`${backendUrl}/business/${userId}`);
+    const businessData = response.data.business;
+
+    if (!businessData) {
+      console.error('No se encontró el documento de negocio para este userId.');
       return null;
+    }
+
+    return {
+      openaiKey: businessData.openaikey,
+      openaiModel: businessData.openaiModel // Obtener el modelo OpenAI preferido
+    };
+  } catch (error) {
+    console.error('Error al obtener la configuración de OpenAI desde el backend:', error);
+    return null;
   }
 };
 
 
 const getOpenAIKey = async (userId) => {
-    const db = getFirestore();
-    const businessCollection = collection(db, 'Business');
-    const q = query(businessCollection, where('userId', '==', userId));
-  
-    try {
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const businessData = querySnapshot.docs[0].data();
-        return businessData.openaikey;
-      } else {
-        console.error('No se encontró un documento con ese userId.');
-        return null;
-      }
-    } catch (error) {
-      console.error('Error al obtener la openaikey:', error);
+  try {
+    const response = await axios.get(`${backendUrl}/business/${userId}`);
+    const businessData = response.data.business;
+
+    if (!businessData) {
+      console.error('No se encontró el documento de negocio para este userId.');
       return null;
     }
-  };
+
+    return businessData.openaikey;
+  } catch (error) {
+    console.error('Error al obtener la openaikey desde el backend:', error);
+    return null;
+  }
+};
 
 const saveTokenUsage = async (usage, userId, type) => {
     const db = getFirestore();

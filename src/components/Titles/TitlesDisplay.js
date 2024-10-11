@@ -23,6 +23,8 @@ export default function TitlesDisplay() {
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
   const { keywordPlanId } = useParams();
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -33,7 +35,7 @@ export default function TitlesDisplay() {
     const loadTitles = async () => {
       try {
         // Fetch all titles associated with the keyword plan
-        const response = await axios.get(`http://localhost:8000/keywordplans/${keywordPlanId}/titles`);
+        const response = await axios.get(`${backendUrl}/keywordplans/${keywordPlanId}/titles`);
         const titlesData = response.data.titles;
 
         setTitles(titlesData);
@@ -48,7 +50,7 @@ export default function TitlesDisplay() {
   const handleDeleteTitle = async (titleId) => {
     try {
       // Delete the title
-      await axios.delete(`http://localhost:8000/titles/${titleId}`);
+      await axios.delete(`${backendUrl}/titles/${titleId}`);
 
       console.log('Título eliminado exitosamente.');
 
@@ -67,7 +69,7 @@ export default function TitlesDisplay() {
   const handleEditTitle = async (titleId) => {
     try {
       // Update the title in the backend
-      await axios.put(`http://localhost:8000/titles/${titleId}`, { title: editedTitle });
+      await axios.put(`${backendUrl}/titles/${titleId}`, { title: editedTitle });
 
       // Update the local state
       setTitles((prevTitles) =>

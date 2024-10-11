@@ -75,13 +75,15 @@ export default function PublishDisplay() {
   const { keywordPlanId } = useParams();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   const handleCategorySelect = async (category) => {
     setShowCategoryModal(false);
     setSelectedCategory(category);
     if (category) {
       contents.forEach(async (content) => {
-        await axios.put(`http://localhost:8000/contents/${content.id}`, { category });
+        await axios.put(`${backendUrl}/contents/${content.id}`, { category });
       });
       console.log(`Categoría '${category}' agregada a todos los contenidos.`);
     }
@@ -93,7 +95,7 @@ export default function PublishDisplay() {
       return;
     }
     try {
-      const response = await axios.get(`http://localhost:8000/contents/keywordplan/${keywordPlanId}`);
+      const response = await axios.get(`${backendUrl}/contents/keywordplan/${keywordPlanId}`);
       setContents(response.data.contents);
     } catch (error) {
       console.error('Error al cargar los contenidos:', error);
@@ -116,7 +118,7 @@ export default function PublishDisplay() {
       console.log(`Iniciando publicación de contenido con ID: ${contentId}`);
 
       // Obtener los datos del negocio desde el backend
-      const businessResponse = await axios.get(`http://localhost:8000/business/${currentUser.uid}`);
+      const businessResponse = await axios.get(`${backendUrl}/business/${currentUser.uid}`);
       const businessData = businessResponse.data.business;
       console.log('Datos de negocio:', businessData);
   
@@ -127,7 +129,7 @@ export default function PublishDisplay() {
       }
   
       // Obtener el título y el contenido desde el backend
-      const contentResponse = await axios.get(`http://localhost:8000/contents/${contentId}`);
+      const contentResponse = await axios.get(`${backendUrl}/contents/${contentId}`);
       const contentData = contentResponse.data.content;
       console.log('Datos del contenido:', contentData);
   
@@ -160,7 +162,7 @@ export default function PublishDisplay() {
       console.log(`Contenido publicado con éxito en: ${postUrl}`);
   
       // Guardar la URL publicada en el backend
-      await axios.put(`http://localhost:8000/contents/${contentId}`, { published: postUrl });
+      await axios.put(`${backendUrl}/contents/${contentId}`, { published: postUrl });
       console.log(`URL del post guardada con éxito en el backend: ${postUrl}`);
   
     } catch (error) {
@@ -194,7 +196,7 @@ export default function PublishDisplay() {
 
   const handleContentDeletion = async (contentId) => {
     try {
-      await axios.delete(`http://localhost:8000/contents/${contentId}`);
+      await axios.delete(`${backendUrl}/contents/${contentId}`);
       setContents(contents.filter(content => content.id !== contentId));
     } catch (error) {
       console.error('Error al eliminar el contenido:', error);
